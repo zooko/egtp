@@ -139,7 +139,7 @@ if re.search('bsd', sys.platform, re.I):
 if os.environ.has_key('CRYPTOPP_DIR'):
     cryptoppdir = os.environ['CRYPTOPP_DIR']
     if not os.path.isdir(cryptoppdir) :
-        raise SystemExit, "Your CRYPTOPP_DIR environment variable is incorrect."
+        raise SystemExit, "Your CRYPTOPP_DIR environment variable is incorrect.  is not dir: cryptoppdir: %s" % cryptoppdir
 else:
     raise SystemExit, "Your CRYPTOPP_DIR environment variable must be set."
 
