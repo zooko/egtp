@@ -6,7 +6,7 @@
 #    GNU Lesser General Public License v2.1.
 #    See the file COPYING or visit http://www.gnu.org/ for details.
 #
-__cvsid = '$Id: EGTPunittest.py,v 1.2 2002/04/21 16:25:36 zooko Exp $'
+__cvsid = '$Id: EGTPunittest.py,v 1.3 2002/04/23 15:20:11 zooko Exp $'
 
 # standard Python modules
 import threading, types, unittest
@@ -97,6 +97,7 @@ class Testy(unittest.TestCase):
 
         @param lm an object that satisfies the ILookupMan interface
         """
+        pass
        
     def _help_test_lookup_good_versus_bogus_values(self, lm):
         """
@@ -106,6 +107,7 @@ class Testy(unittest.TestCase):
 
         @param lm an object that satisfies the ILookupMan interface
         """
+        pass
 
     def _help_test_no_block_on_publish(self, lm):
         """
@@ -135,14 +137,14 @@ class Testy(unittest.TestCase):
         dm = LocalDiscoveryMan()
         finishedflag = threading.Event()
         d={}
-        def setup(finishedflag=finishedflag, d=d):
+        def setup(finishedflag=finishedflag, d=d, self=self, lm=lm, dm=dm):
             start = timer.time()
 
             # Make a listener.  He will announce his EGTP address to the lookupman `lm'.
             d['n1'] = Node.Node(allownonrouteableip=true, lookupman=lm, discoveryman=dm)
 
             # Set a handler func: if any messages come in with message type "ping", the EGTP Node will call this function.
-            def l_ping_handler(sender, msg, finishedflag=finishedflag, start=start):
+            def l_ping_handler(sender, msg, finishedflag=finishedflag, start=start, self=self):
                 debugprint("%s(): passed in %s seconds: Got a message from %s.  The message says: %s\n", args=(self.__class__.__name__, "%0.1f" % (timer.time() - start), sender, msg,), v=0)
                 finishedflag.set()
 
