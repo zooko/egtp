@@ -12,7 +12,7 @@
 # the sub modules that import things from this (debug, confutils,
 # mojoutil, idlib, etc..)
 #
-__cvsid = '$Id: mojostd.py,v 1.4 2002/02/11 00:03:26 zooko Exp $'
+__cvsid = '$Id: mojostd.py,v 1.5 2002/03/11 17:35:17 zooko Exp $'
 
 
 ### Imports:
@@ -120,9 +120,9 @@ else:
     else:
         HOME_DIR = os.path.normpath(r"\My Documents")
 
-if os.environ.has_key('EVILCONFDIR'):
+if os.environ.has_key('EGTPCONFDIR'):
     BROKER_DIR = os.path.normpath(
-            os.path.join("${EVILCONFDIR}", "broker")
+            os.path.join("${EGTPCONFDIR}", "broker")
         )
 else:
     # The environment variable wasn't set, so use this hardcoded constant:
@@ -962,7 +962,7 @@ mojoutil.recursive_dict_update(confman["PATH"], mypathdict)
 
 # keep these as valid VersionNumbers, our code will use that to
 # check for later versions of the software from the bootpage.
-from EGTPVersion import EGTP_VERSION_STR
+import EGTPVersion
 
 # XXX until this is autodetected, don't have it misreport
 import evilcryptopp
@@ -1028,7 +1028,7 @@ confdefaults["PATH"]["HOME_DIR"] = HOME_DIR
 
 ### Broker paths:
 # BROKER_DIR is the root directory of all client-side configuration and data files.
-# For now we just use the value of the environment variable "EVILCONFDIR",
+# For now we just use the value of the environment variable "EGTPCONFDIR",
 # but someday we want code that abstracts the platform even more, in order to make
 # installation and setup of the Broker as smooth as possible.
 # mojolog.write("HELLO os.environ: %s\n" % `os.environ.items()`)
@@ -1162,7 +1162,7 @@ def gen_per_kb_price_dict(onekbprice, scalingfactor=0.95) : # XXX Shouldn't this
 dictutil.recursive_dict_update(confdefaults,
         {
             "MAX_VERBOSITY" : "2",
-            "EGTP_VERSION_STR" : EGTP_VERSION_STR,
+            "EGTP_VERSION_STR" : EGTPVersion.versionstr_full,
             
             # for General Preferences
             "AUTO_LAUNCH_BROWSER": "yes",
@@ -1596,8 +1596,8 @@ class ConfManager(UserDict.UserDict):
         filedict = lines_to_dict(file.readlines())
         dictutil.recursive_dict_update(self.dict, filedict)
         file.close()
-        if VersionNumber(self.dict.get("EGTP_VERSION_STR")) != VersionNumber(EGTP_VERSION_STR):
-            mojolog.write("NOTE: Loading '%s' version config file while running '%s' version confutils\n" % (self.dict.get("EGTP_VERSION_STR"), EGTP_VERSION_STR))
+        if VersionNumber(self.dict.get("EGTP_VERSION_STR")) != VersionNumber(EGTPVersion.versionstr_full):
+            mojolog.write("NOTE: Loading '%s' version config file while running '%s' version confutils\n" % (self.dict.get("EGTP_VERSION_STR"), EGTPVersion.versionstr_full))
 
         if platform == 'win32': 
             confdefaults['TCP_MAX_CONNECTIONS'] = 50
@@ -1631,7 +1631,7 @@ class ConfManager(UserDict.UserDict):
             mojolog.write("ConfMan: NOT saving due to transience.\n")
             return
 
-        self.dict["EGTP_VERSION_STR"] = EGTP_VERSION_STR
+        self.dict["EGTP_VERSION_STR"] = EGTPVersion.versionstr_full
         mojolog.write('saving conf file %s (%s); PATH section:\n%s\n', args=(self.dict["PATH"]["BROKER_CONF"], os.path.expandvars(self.dict["PATH"]["BROKER_CONF"]), self.dict["PATH"],), v=6, vs='conf')
         file = open(os.path.expandvars(self.dict["PATH"]["BROKER_CONF"]), 'w')
         file.writelines(dict_to_lines(self.dict))
@@ -1801,14 +1801,14 @@ class ConfManager(UserDict.UserDict):
         if self.dict.has_key("PATHS"):
             mojolog.write("*** Converting `PATHS' section of conf file into new `PATH' section\n", vs='conf', v=0)
             evildir = os.environ.get('EVILDIR', '')
-            evilconfdir = os.environ.get('EVILCONFDIR', '')
+            evilconfdir = os.environ.get('EGTPCONFDIR', '')
             home = os.environ.get('HOME', '')
 
             # a list of tuples of thing to replace with what to
             # replace it with.  this defines the order that the
             # replacements will be done in.  (since HOME is often a
             # part of the first two, it should be done last)
-            replacements = [(evildir, '${EVILDIR}'), (evilconfdir, '${EVILCONFDIR}'), (home, '${HOME}')]
+            replacements = [(evildir, '${EVILDIR}'), (evilconfdir, '${EGTPCONFDIR}'), (home, '${HOME}')]
 
             for key, value in self.dict["PATHS"].items():
                 for prefix, replacement in replacements:

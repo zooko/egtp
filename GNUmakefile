@@ -7,13 +7,13 @@
 # To run this, you will need to pass the following variable
 # definitions on the command line.
 #
-#  EVILDIR - the location of your checked out cvs 'evil' module 
+#  EVILDIR - the location of your checked out cvs 'egtp' module 
 #  EXTSRCDIR - the location of your checked out cvs 'extsrc' module 
 #
 # example:
-#   coolmachine:~/evil% make EVILDIR=${HOME}/evil EXTSRCDIR=${HOME}/extsrc
+#   coolmachine:~/egtp% make EVILDIR=${HOME}/egtp EXTSRCDIR=${HOME}/extsrc
 #
-# $Id: GNUmakefile,v 1.1 2002/01/29 20:07:05 zooko Exp $
+# $Id: GNUmakefile,v 1.2 2002/03/11 17:35:16 zooko Exp $
 
 # For the sourcetar target to place distribution files:
 DISTDIR=/var/tmp
@@ -21,8 +21,8 @@ DISTDIR=/var/tmp
 # For the sourcetar target to create the tarball structure:
 TMPDIR=/var/tmp
 
-VERSTR="beta099942"
-PKGNAME=mojonation
+VERSTR="002"
+PKGNAME=egtp
 
 # GNU make is required to build this, change this or pass MAKE=gmake
 # when building if it fails.
@@ -49,23 +49,19 @@ BINUNCTARBALLNAME=$(shell echo $(PKGNAME)-$(VERSTR)-`uname`-`uname -m`.tar)
 BINTARBALLNAME=$(BINUNCTARBALLNAME).gz
 
 # The command to use to run the python interpreter (used for running
-# setup.py to build external modules).  Change this to build
-# everything using a different version or installation of python.
-ifeq (${PYTHON},)
-PYTHON=$(shell which python2.1)
-endif
+# setup.py to build external modules).
+PYTHON=$(shell ${EVILDIR}/Mstart 'echo $${PYTHON}')
 
 help:
 	@echo ''
 	@echo 'The following targets are defined in this Makefile:'
 	@echo '  all       - build and install the non-GUI related libraries & modules.'
-	@echo '  clean     - clean the mojo nation modules.'
+	@echo '  clean     - clean the egtp modules.'
 	@echo '  distclean - clean ALL stuff, including external libraries.'
 	@echo 'Probably only for developers:'
 	@echo '  sourcetar - makes a tarball suitable for distribution of just source.'
 	@echo '  binarytar - makes a tarball suitable for distribution of source and binaries'
 	@echo '  			 for the current platform.'
-	@echo '  package - makes a standalone executable in linux/dist_mojonation'
 	@echo ''
 	@echo 'GNU Make is required to build.  If your default "make" is not GNU,'
 	@echo 'add a MAKE=gmake parameter to the command line and use GNU make,'
@@ -73,10 +69,9 @@ help:
 	@echo 'gmake all MAKE=gmake'
 
 
-all: mencode_module pybsddb_module crypto_modules
+all: mencode_module pybsddb_module crypto_modules co_pyutil
 	@echo ''
 	@echo 'All done.'
-	@echo 'Remember to set your PYTHONPATH as described in the README!'
 	@echo ''
 	@date
 
@@ -84,11 +79,11 @@ all: mencode_module pybsddb_module crypto_modules
 
 clean: clean_bytecode mencode_module_clean pybsddb_module_clean crypto_modules_clean
 	@echo ''
-	@echo 'mojo nation code cleaned.'
+	@echo 'egtp code cleaned.'
 	@echo ''
 
 # Remember to update this to include _clean targets for everything!
-distclean: clean inst_berkeleydb_clean inst_cryptopp_clean setup_dirs_clean inst_gordons_clean
+distclean: clean inst_berkeleydb_clean inst_cryptopp_clean setup_dirs_clean
 	@echo ''
 	@echo 'Dependent software and libraries cleaned.'
 	@echo ''
@@ -123,9 +118,6 @@ binarytar: clean_bytecode all stripall
 	@rmdir $(TMPDIR)/$(PKGNAME)
 	@echo 'Distro tar ball created, and tagged with seconds since epoch:'
 	@ls -l $(DISTDIR)/$(BINTARBALLNAME)
-
-package: package_with_gordons
-	@echo 'Complete gordons installer mojonation packaging under development...'
 
 ################ Specific targets and support targets below here ###############
 
@@ -419,38 +411,18 @@ crypto_modules_clean:
 	rm -rf build && \
 	if [ -f evilcryptopp.so ]; then rm -f evilcryptopp.so ; fi
 
-#
-# Gordon's Installer is a cool python software bundler
-#
-inst_gordons:
-	@echo "building Gordons Installer under ${EXTSRCDIR}"
-	cd ${EXTSRCDIR} && \
-	tar -xzf installer_linux_b_01.tar.gz && \
-	cd builder/source && $(PYTHON) Make.py && \
-	$(MAKE)
+# co_pyutil 
 
-${EXTSRCDIR}/builder/support/run:
-	@if [ ! -x $@ ]; then \
-		$(MAKE) EXTSRCDIR=${EXTSRCDIR} EVILDIR=${EVILDIR} inst_gordons ; \
+co_pyutil:
+	@cd ${EVILDIR}/PythonLibs && \
+	touch ${HOME}/.cvspass && \
+	if [ "`grep anonymous@cvs.pyutil ${HOME}/.cvspass`" = "" ]; then \
+		echo ":pserver:anonymous@cvs.pyutil.sourceforge.net:/cvsroot/pyutil A" >>${HOME}/.cvspass ; \
+	fi && \
+	if [ -d pyutil ]; then \
+		(cd pyutil && cvs -z3 -d:pserver:anonymous@cvs.pyutil.sourceforge.net:/cvsroot/pyutil up -Pd ) ; \
+	else \
+		cvs -z3 -d:pserver:anonymous@cvs.pyutil.sourceforge.net:/cvsroot/pyutil co -P pyutil ; \
 	fi
 
-package_with_gordons: ${EXTSRCDIR}/builder/support/run
-	echo "the package_with_gordons target isn't quite working"
-	exit 1
-	cd ${EVILDIR}/linux && (if [ -d dist_mojonation ]; then rm -rf dist_mojonation ; fi) && \
-	$(PYTHON) -u ${EXTSRCDIR}/builder/Builder.py mojodist.cfg
-	cd ${EVILDIR}/linux/dist_mojonation && \
-	cp ../mojohostosconfig.py . && \
-	cp ${EVILDIR}/COPYING . && \
-	cp ${EVILDIR}/README . && \
-	cp /usr/lib/python1.5/copy_reg.pyc . && \
-	cp -r ${EVILDIR}/localweb . && \
-	cp -r ${EVILDIR}/contenttypes . && \
-	chmod a+x mojobroker mojoproxy
-	@echo REMINDER - your installation must create a mojonation.ini file for mojohostosconfig.py
-	@echo to read.  XXX mojohostosconfig.py still needs tweaking for the best user experience
-	@echo on unixish systems.
-
-inst_gordons_clean:
-	-if [ -d ${EXTSRCDIR}/builder ]; then rm -rf ${EXTSRCDIR}/builder ; fi
 

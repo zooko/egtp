@@ -6,16 +6,16 @@
 #    GNU Lesser General Public License v2.1.
 #    See the file COPYING or visit http://www.gnu.org/ for details.
 #
-__cvsid = '$Id: EGTPVersion.py,v 1.1 2002/01/29 22:40:29 zooko Exp $'
+__cvsid = '$Id: EGTPVersion.py,v 1.2 2002/03/11 17:35:16 zooko Exp $'
 
-#
-# This "module" should contain nothing else but EGTP_VERSION_STR
-#
-# ... and __cvsid...
-# ... and a copyright notice so that nobody illegally copies our version numbers...
-# TODO: make the line above this one funnier.
+# standard modules
+import string
 
-import os, string
+# pyutil modules
+import VersionNumber
 
-EGTP_VERSION_TUP=(0,0,2,)
-EGTP_VERSION_STR=string.join(map(str, EGTP_VERSION_TUP), ".")
+# major, minor, micro (== bugfix release), nano (== not-publically-visible patchlevel), flag (== not-publically-visible UNSTABLE or STABLE flag)
+versiontup = (0, 0, 2, 1,)
+versionobj = VersionNumber.VersionNumber(string.join(map(str, versiontup), '.') + '-' + 'UNSTABLE')
+versionstr_full = versionobj.full_string()
+versionstr = versionobj.terse_string()

@@ -6,7 +6,7 @@
 #    GNU Lesser General Public License v2.1.
 #    See the file COPYING or visit http://www.gnu.org/ for details.
 #
-__cvsid = '$Id: Node.py,v 1.1 2002/01/29 20:07:05 zooko Exp $'
+__cvsid = '$Id: Node.py,v 1.2 2002/03/11 17:35:16 zooko Exp $'
 
 
 # standard modules
@@ -15,9 +15,6 @@ import types
 # pyutil modules
 import DoQ
 from humanreadable import hr
-
-# mojoasyncore modules
-import mojoasyncore
 
 # Mojo Nation modules
 import CommStrat

@@ -10,7 +10,7 @@
 #
 # BirthDate: 2000-06-08
 # CVS:
-__cvsid = '$Id: confutils.py,v 1.4 2002/02/11 14:47:57 zooko Exp $'
+__cvsid = '$Id: confutils.py,v 1.5 2002/03/11 17:35:17 zooko Exp $'
 
 
 # standard modules
@@ -26,7 +26,7 @@ false = 0
 
 # our modules
 import humanreadable
-from mojostd import EGTP_VERSION_STR, CRYPTOPP_VERSION_STR, confdefaults,  platform_map, platform, gen_per_kb_price_dict, DictFileException, lines_to_dict, dict_to_lines, ConfManager, confman
+from mojostd import CRYPTOPP_VERSION_STR, confdefaults,  platform_map, platform, gen_per_kb_price_dict, DictFileException, lines_to_dict, dict_to_lines, ConfManager, confman
 import types
 
 

@@ -20,13 +20,13 @@ import sys
 import DoQ
 from config import DEBUG_MODE
 from debugprint import debugprint
+import pyutilasync
 
 # (old-)EGTP modules
 import CommsError
 from humanreadable import hr
 import idlib
 import mojoutil
-import mojoasyncore
 from confutils import confman
 
 true = 1
@@ -88,7 +88,7 @@ class TCPConnection(asyncore.dispatcher):
         else:
             self._everconnected = false # `handle_connect()' sets this to true
         self._closing = false
-        self._startedclosingonmojoasyncore = false # to prevent multiple _finish_closing_on_mojoasyncore calls, thus making `close()' idempotent
+        self._startedclosingonpyutilasync = false # to prevent multiple _finish_closing_on_pyutilasync calls, thus making `close()' idempotent
         self._closed = false # This gets set to `true' in `close()'.
         self._last_io_time = time.time() # the last time an IO event happened on this connection
         self._inmsgs = 0 # The total number of incoming messages that have come through this connection.
@@ -169,18 +169,18 @@ class TCPConnection(asyncore.dispatcher):
         """
         No more data will be read in from the network until `unthrottle_read()' is called.
 
-        @precondition This method must be called on the mojoasyncore thread.: mojoasyncore.selector.is_currently_asyncore_thread()
+        @precondition This method must be called on the pyutilasync thread.: pyutilasync.selector.is_currently_asyncore_thread()
         """
-        assert mojoasyncore.selector.is_currently_asyncore_thread(), "precondition: This method must be called on the mojoasyncore thread."
+        assert pyutilasync.selector.is_currently_asyncore_thread(), "precondition: This method must be called on the pyutilasync thread."
 
         self._readthrottled = 1 # `true'
         self._readable = 0 # `false'
 
     def _unthrottle_read(self):
         """
-        @precondition This method must be called on the mojoasyncore thread.: mojoasyncore.selector.is_currently_asyncore_thread()
+        @precondition This method must be called on the pyutilasync thread.: pyutilasync.selector.is_currently_asyncore_thread()
         """
-        assert mojoasyncore.selector.is_currently_asyncore_thread(), "precondition: This method must be called on the mojoasyncore thread."
+        assert pyutilasync.selector.is_currently_asyncore_thread(), "precondition: This method must be called on the pyutilasync thread."
 
         self._readthrottled = None # `false'
         # Now if we are not closing then we are now ready to read.
@@ -191,18 +191,18 @@ class TCPConnection(asyncore.dispatcher):
         """
         No more data will be written out to the network until `unthrottle_write()' is called.
 
-        @precondition This method must be called on the mojoasyncore thread.: mojoasyncore.selector.is_currently_asyncore_thread()
+        @precondition This method must be called on the pyutilasync thread.: pyutilasync.selector.is_currently_asyncore_thread()
         """
-        assert mojoasyncore.selector.is_currently_asyncore_thread(), "precondition: This method must be called on the mojoasyncore thread."
+        assert pyutilasync.selector.is_currently_asyncore_thread(), "precondition: This method must be called on the pyutilasync thread."
 
         self._writethrottled = 1 # `true'
         self._writable = 0 # `false'
 
     def _unthrottle_write(self):
         """
-        @precondition This method must be called on the mojoasyncore thread.: mojoasyncore.selector.is_currently_asyncore_thread()
+        @precondition This method must be called on the pyutilasync thread.: pyutilasync.selector.is_currently_asyncore_thread()
         """
-        assert mojoasyncore.selector.is_currently_asyncore_thread(), "precondition: This method must be called on the mojoasyncore thread."
+        assert pyutilasync.selector.is_currently_asyncore_thread(), "precondition: This method must be called on the pyutilasync thread."
 
         self._writethrottled = None # `false'
         # Now if we are not closing, and if there is data waiting to be sent, then we are ready to write.
@@ -237,7 +237,7 @@ class TCPConnection(asyncore.dispatcher):
         # (Note that it is possible for us to be closing now even though we tested just a few lines up because we are operating on the DoQ thread here and the asyncore thread can cause us to become closing.)
         if not self._closing and not self._writethrottled and not self._writable:
             self._writable = 1 # `true'
-            mojoasyncore.selector.wake_select()
+            pyutilasync.selector.wake_select()
 
         self._nummsgs = self._nummsgs + 1
 
@@ -268,37 +268,37 @@ class TCPConnection(asyncore.dispatcher):
     def close(self, reason=None):
         """
         The sequence of functions that get called to close a TCPConnection instance are:
-         [*] close() -> [a] _finish_closing_on_mojoasyncore -> [D] _finish_closing_on_doq
+         [*] close() -> [a] _finish_closing_on_pyutilasync -> [D] _finish_closing_on_doq
          `[*]' means that the function can be invoked from any thread, `[D]' means that the function must be
-         invoked on the DoQ thread and `[a]' means that the function must be invoked on the mojoasyncore thread.
+         invoked on the DoQ thread and `[a]' means that the function must be invoked on the pyutilasync thread.
          You should only ever call `close()', never any of the others.
          """
         debugprint("%s.close(reason: %s)\n", args=(self, reason,), v=5, vs="TCPConnection")
 
         self._set_closing()
-        if mojoasyncore.selector.is_currently_asyncore_thread():
-            self._finish_closing_on_mojoasyncore()
+        if pyutilasync.selector.is_currently_asyncore_thread():
+            self._finish_closing_on_pyutilasync()
         else:
             assert DoQ.doq.is_currently_doq()
-            mojoasyncore.selector.add_task(self._finish_closing_on_mojoasyncore)
-            mojoasyncore.selector.wake_select()
+            pyutilasync.selector.add_task(self._finish_closing_on_pyutilasync)
+            pyutilasync.selector.wake_select()
 
-    def _finish_closing_on_mojoasyncore(self):
+    def _finish_closing_on_pyutilasync(self):
         """
         It calls `asyncore.dispatcher.close(self)' to clean up the socket object.
 
         It then puts a task on the DoQ to do any cleaning-up that interacts with the DoQ world.
         (See `_finish_closing_on_doq'.)
 
-        @precondition This method must be called on the mojoasyncore thread.: mojoasyncore.selector.is_currently_asyncore_thread()
+        @precondition This method must be called on the pyutilasync thread.: pyutilasync.selector.is_currently_asyncore_thread()
         """
-        assert mojoasyncore.selector.is_currently_asyncore_thread(), "precondition: This method must be called on the mojoasyncore thread."
+        assert pyutilasync.selector.is_currently_asyncore_thread(), "precondition: This method must be called on the pyutilasync thread."
 
-        debugprint("%s._finish_closing_on_mojoasyncore()\n", args=(self,), v=5, vs="TCPConnection")
+        debugprint("%s._finish_closing_on_pyutilasync()\n", args=(self,), v=5, vs="TCPConnection")
 
-        if self._startedclosingonmojoasyncore:
+        if self._startedclosingonpyutilasync:
             return
-        self._startedclosingonmojoasyncore = true
+        self._startedclosingonpyutilasync = true
 
         # debugprint("%s.close(): about to asyncore.dispatcher.close()...\n", args=(self,))
         asyncore.dispatcher.close(self)
@@ -316,7 +316,7 @@ class TCPConnection(asyncore.dispatcher):
         assert DoQ.doq.is_currently_doq(), "precondition: This method must be called on the DoQ."
 
         assert self._closing
-        assert self._startedclosingonmojoasyncore
+        assert self._startedclosingonpyutilasync
 
         debugprint("%s._finish_closing_on_doq()\n", args=(self,), v=5, vs="TCPConnection")
 

@@ -21,6 +21,7 @@ import types
 # pyutil modules
 from config import DEBUG_MODE, REALLY_SLOW_DEBUG_MODE
 from debugprint import debugprint
+import pyutilasync
 
 # (old-)EGTP modules
 import BandwidthThrottler
@@ -33,7 +34,6 @@ import LazySaver
 import TCPConnection
 import confutils
 import idlib
-import mojoasyncore
 import mojoutil
 from mojoutil import bool
 from confutils import confman
@@ -106,8 +106,8 @@ class TCPCommsHandler(asyncore.dispatcher, LazySaver.LazySaver):
         LazySaver.LazySaver.__init__(self, fname=os.path.join(self._mtm._dbdir, 'ListenerManager.pickle'), attrs={'_ip': None, '_listenport': None}, DELAY=10*60)
 
     def _bandwidth_tick_doq_loop(self):
-        mojoasyncore.selector.add_task(self._throttlerout.used, args=(0,))
-        mojoasyncore.selector.add_task(self._throttlerin.used, args=(0,))
+        pyutilasync.selector.add_task(self._throttlerout.used, args=(0,))
+        pyutilasync.selector.add_task(self._throttlerin.used, args=(0,))
         DoQ.doq.add_task(self._bandwidth_tick_doq_loop, delay=60)
 
     def shutdown(self):

@@ -6,17 +6,19 @@
 #    GNU Lesser General Public License v2.1.
 #    See the file COPYING or visit http://www.gnu.org/ for details.
 #
-__cvsid = '$Id: EGTPtest.py,v 1.2 2002/02/11 14:47:55 zooko Exp $'
+__cvsid = '$Id: EGTPtest.py,v 1.3 2002/03/11 17:35:16 zooko Exp $'
 
 # standard Python modules
 import threading
 
 # pyutil modules
 import DoQ
+import config
 from debugprint import debugprint
+from humanreadable import hr
 
 # libbase32 modules
-from humread import hr
+# from humread import hr # XXX for when we switch to base32 encoding...
 
 # MN modules
 from confutils import confman
@@ -34,6 +36,7 @@ false = 0
 finishedflag = threading.Event() # This gets set when we are done with the test and it is okay for the Python interpreter to exit.
 
 confman['MAX_VERBOSITY'] = 0
+config.MAX_VERBOSITY = 0
 
 # a lookup man which uses only local data;  In a real app you need remote lookup in the form of MetaTrackers, Chord, Plex, Alpine, or something.
 class LocalLookupMan(ILookupManager):
