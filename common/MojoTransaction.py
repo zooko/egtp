@@ -5,7 +5,7 @@
 #    GNU Lesser General Public License v2.1.
 #    See the file COPYING or visit http://www.gnu.org/ for details.
 #
-__cvsid = '$Id: MojoTransaction.py,v 1.5 2002/03/11 21:54:53 zooko Exp $'
+__cvsid = '$Id: MojoTransaction.py,v 1.6 2002/03/13 17:58:28 zooko Exp $'
 
 
 # standard modules
@@ -278,6 +278,7 @@ class MojoTransactionManager:
 
     def start_listening(self):
         self._listenermanager.start_listening(inmsg_handler_func=self._cm.handle_raw_message)
+        self.send_hello_to_meta_trackers()
 
     def stop_listening(self):
         self._ch.stop_listening()
@@ -429,9 +430,11 @@ class MojoTransactionManager:
             self.__handler_funcs_and_services_dicts_update_lock.release()
 
     def send_hello_to_meta_trackers(self):
+        debugprint("xxxxxxx %s.send_hello_to_meta_trackers()\n", args=(self,))
         self.__announce_self_to_id_trackers()
 
     def _hello_sequence_num_needs_increasing(self):
+        debugprint("xxxxxxx %s._hello_sequence_num_needs_increasing()\n", args=(self,))
         if not self.__need_sequence_update:
             self.__need_sequence_update = true
 
@@ -440,6 +443,7 @@ class MojoTransactionManager:
         @returns a contact info dict which can have no comm strategies if there is no strategy yet (which can happen in practice because you haven't found a relayer to announce yet)
         """
         (cs, newflag,) = self._listenermanager.get_comm_strategy_and_newflag()
+        debugprint("xxxxxxx %s._get_our_hello_msgbody(); cs: %s, newflag: %s\n", args=(self, cs, newflag,))
 
         if newflag:
             self._hello_sequence_num_needs_increasing()
@@ -525,7 +529,7 @@ class MojoTransactionManager:
             # Hm.  We haven't figured out how people can talk to us yet.  Might as well not bother announcing then.
             return
 
-        self._lookupman.publish({'type': "EGTP address", 'key': counterparty_id}, hello_body)
+        self._lookupman.publish({'type': "EGTP address", 'key': self.get_id()}, hello_body)
 
     def send_goodbye_to_metatrackers(self):
         """Send sign off message to meta/id trackers we most recently said hello to; this does not wait for the send to succeed!"""
