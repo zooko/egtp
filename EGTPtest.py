@@ -6,7 +6,7 @@
 #    GNU Lesser General Public License v2.1.
 #    See the file COPYING or visit http://www.gnu.org/ for details.
 #
-__cvsid = '$Id: EGTPtest.py,v 1.13 2002/07/13 23:38:14 zooko Exp $'
+__cvsid = '$Id: EGTPtest.py,v 1.14 2002/07/16 20:42:35 zooko Exp $'
 
 # standard Python modules
 import threading, types
@@ -122,7 +122,7 @@ def runalltests(tests, expectedfailures=0):
 
 def test_local(finishedflag, numsuccessesh):
     localLM = NodeLookupMan.NodeLookupMan(LocalLookupMan())
-local   localDM = LocalDiscoveryMan()
+    localDM = LocalDiscoveryMan()
     _help_test(finishedflag, numsuccessesh, localLM, localDM, name="test_local")
 
 def test_tristero_lookup(finishedflag, numsuccessesh):
