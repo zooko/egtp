@@ -12,7 +12,7 @@
 # the sub modules that import things from this (debug, confutils,
 # mojoutil, idlib, etc..)
 #
-__cvsid = '$Id: mojostd.py,v 1.7 2002/06/25 03:51:47 zooko Exp $'
+__cvsid = '$Id: mojostd.py,v 1.8 2002/07/16 22:00:20 zooko Exp $'
 
 
 ### Imports:
@@ -1724,6 +1724,8 @@ class ConfManager(UserDict.UserDict):
                 raise
             else:
                 return default
+        if thing is None:
+            thing = default
         return thing
     
     def set_keys(self, keys, value='true'):
@@ -1779,7 +1781,11 @@ class ConfManager(UserDict.UserDict):
         """
         if default is None:
             default = {}
-        return dictToList(self.get_keys(keys, default=default))
+        try:
+            return dictToList(self.get_keys(keys, default=default))
+        except SEXPError, le:
+            le.args = (le.args, "keys: %s, default: %s" % tuple(map(humanreadable.hr, (keys, default,))))
+            raise le
 
     def getpath(self, keys, default=None):
         try:
