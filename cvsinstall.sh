@@ -40,15 +40,25 @@ cvs -z3 -d:pserver:anonymous@cvs.egtp.sourceforge.net:/cvsroot/egtp co egtp exts
 # "cvs update -Pd" in each one.
 
 # Set these two environment variables to be the absolute path to the respective directories:
-EVILDIR=${PWD}/egtp; export EVILDIR
+EGTPDIR=${PWD}/egtp; export EGTPDIR
 EXTSRCDIR=${PWD}/extsrc; export EXTSRCDIR
 cd egtp
-make all
+
+if which gmake >/dev/null 2>&1
+then
+  gmake MAKE=gmake all
+elif gmake --version 2>&1 | grep ^GNU >/dev/null
+then
+  gmake MAKE=gmake all
+else
+  echo "Warning: you may need gmake to compile egtp!"
+  make all
+fi
 # This 'make all' step takes a while if this is the first time you've compiled.
 
 # Now see if it passes all unit tests:
 ./unittest.sh
-  
+
 
 ### EXTRA OPTIONS AND DETAILS
 

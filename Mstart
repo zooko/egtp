@@ -6,7 +6,7 @@
 #    GNU Lesser General Public License v2.1.
 #    See the file COPYING or visit http://www.gnu.org/ for details.
 #
-__cvsid="$Id: Mstart,v 1.4 2002/03/14 16:50:30 zooko Exp $"
+__cvsid="$Id: Mstart,v 1.5 2002/06/24 21:33:29 zooko Exp $"
 
 
 # XXX README README README
@@ -103,7 +103,7 @@ function findEGTPdir {
     YODEL=`${YODELLER} 2>/dev/null`
     if [ "X${YODEL}" = 'XYodel, Weirdling!' ]
     then
-        export EVILDIR
+        export EGTPDIR
         return 0
     fi
 

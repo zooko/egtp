@@ -7,13 +7,13 @@
 # To run this, you will need to pass the following variable
 # definitions on the command line.
 #
-#  EVILDIR - the location of your checked out cvs 'egtp' module 
+#  EGTPDIR - the location of your checked out cvs 'egtp' module 
 #  EXTSRCDIR - the location of your checked out cvs 'extsrc' module 
 #
 # example:
-#   coolmachine:~/egtp% make EVILDIR=${HOME}/egtp EXTSRCDIR=${HOME}/extsrc
+#   coolmachine:~/egtp% make EGTPDIR=${HOME}/egtp EXTSRCDIR=${HOME}/extsrc
 #
-# $Id: GNUmakefile,v 1.5 2002/04/11 13:57:39 zooko Exp $
+# $Id: GNUmakefile,v 1.6 2002/06/24 21:33:29 zooko Exp $
 
 # For the sourcetar target to place distribution files:
 DISTDIR=/var/tmp
@@ -50,7 +50,7 @@ BINTARBALLNAME=$(BINUNCTARBALLNAME).gz
 
 # The command to use to run the python interpreter (used for running
 # setup.py to build external modules).
-PYTHON=$(shell ${EVILDIR}/Mstart 'echo $${PYTHON}')
+PYTHON=$(shell ${EGTPDIR}/Mstart 'echo $${PYTHON}')
 
 help:
 	@echo ''
@@ -89,19 +89,19 @@ distclean: clean inst_berkeleydb_clean inst_cryptopp_clean setup_dirs_clean
 	@echo ''
 
 clean_bytecode:
-	@cd $(EVILDIR)
+	@cd $(EGTPDIR)
 	@find . -name "*.pyc" -print0 | xargs -0 rm -f
 	@find . -name "*.pyo" -print0 | xargs -0 rm -f
 
 bytecompile:
-	cd $(EVILDIR)
+	cd $(EGTPDIR)
 	@echo "Byte compiling .pyo files (optimized)"
 	@echo "NOTE: users of python interpreters of earlier versions can not necessarily use these .pyo files.  This version is:"
 	@$(PYTHON) -c 'import sys; print sys.version'
 	$(PYTHON) -OO -c 'import compileall; compileall.compile_dir(".")'
 
 stripall:
-	cd $(EVILDIR)
+	cd $(EGTPDIR)
 	@echo "stripping all unneeded symbols!"
 	-find . -name "*.so" -print0 | xargs -0 strip --strip-unneeded
 	-find . -name "*.a" -print0 | xargs -0 strip --strip-unneeded
@@ -110,7 +110,7 @@ binarytar: clean_bytecode all stripall
 	@echo -e '\n\nCreating binary tarball.'
 	@mkdir $(TMPDIR)/$(PKGNAME) || ( echo '$(TMPDIR)/$(PKGNAME)/ already exists, aborting.' ; exit 1 )
 	@if [ -f $(DISTDIR)/$(BINUNCTARBALLNAME) ]; then echo '$(DISTDIR)/$(BINUNCTARBALLNAME) already exists, aborting.' ; exit 1; fi
-	@ln -s ${EVILDIR} $(TMPDIR)/$(PKGNAME)/evil
+	@ln -s ${EGTPDIR} $(TMPDIR)/$(PKGNAME)/egtp
 	tar -C$(TMPDIR) --exclude-from tarexclude.txt --exclude="*.pyc" --exclude="*.pyo" --exclude ".#*" --exclude "*.rej" --exclude win32 --exclude BerkeleyDB --exclude .cvsignore --exclude CVS --exclude build --exclude "*.a" --exclude "*.o" -cvhf $(DISTDIR)/$(BINUNCTARBALLNAME) $(PKGNAME)/
 	@if [ -f $(DISTDIR)/$(BINTARBALLNAME) ]; then echo '$(DISTDIR)/$(BINTARBALLNAME) already exists, aborting.' ; exit 1; fi
 	( cd $(TMPDIR); gzip --best $(BINUNCTARBALLNAME) )
@@ -128,17 +128,17 @@ unmod:
 	if [ "X${DIFF}" != "X" ] ; then echo there are changes from CVS -- aborting ; echo ; exit 1 ; fi
 
 check_vars:
-	@if [ "x${EVILDIR}" = "x" -o "x${EXTSRCDIR}" = "x" ]; then echo 'You need to set your EVILDIR and EXTSRCDIR environment variables' ; exit 1 ; fi
-	@if [ ! -d ${EVILDIR} ]; then echo 'EVILDIR directory not found, do you need to cvs checkout evil?' ; exit 1 ; fi
+	@if [ "x${EGTPDIR}" = "x" -o "x${EXTSRCDIR}" = "x" ]; then echo 'You need to set your EGTPDIR and EXTSRCDIR environment variables' ; exit 1 ; fi
+	@if [ ! -d ${EGTPDIR} ]; then echo 'EGTPDIR directory not found, do you need to cvs checkout egtp?' ; exit 1 ; fi
 	@if [ ! -d ${EXTSRCDIR} ]; then echo 'EXTSRCDIR directory not found, do you need to cvs checkout extsrc?' ; exit 1 ; fi
-	@echo Good, you appear to have valid EVILDIR and EXTSRCDIR settings.
+	@echo Good, you appear to have valid EGTPDIR and EXTSRCDIR settings.
 
 setup_dirs: check_vars
-	@echo ======== add ${EVILDIR}/PythonLibs to your PYTHONPATH ========
-	@if [ ! -d ${EVILDIR}/PythonLibs ]; then mkdir ${EVILDIR}/PythonLibs ; fi
+	@echo ======== add ${EGTPDIR}/PythonLibs to your PYTHONPATH ========
+	@if [ ! -d ${EGTPDIR}/PythonLibs ]; then mkdir ${EGTPDIR}/PythonLibs ; fi
 
 setup_dirs_clean: check_vars
-	-if [ -d ${EVILDIR}/PythonLibs ]; then rm -rf ${EVILDIR}/PythonLibs ; fi
+	-if [ -d ${EGTPDIR}/PythonLibs ]; then rm -rf ${EGTPDIR}/PythonLibs ; fi
 
 
 #
@@ -172,7 +172,7 @@ berkeleydb: ${EXTSRCDIR}/BerkeleyDB/lib/libdb.a
 
 ${EXTSRCDIR}/BerkeleyDB/lib/libdb.a:
 	@if [ ! -f $@ ]; then \
-		$(MAKE) EXTSRCDIR=${EXTSRCDIR} EVILDIR=${EVILDIR} OSTYPE=$(OSTYPE) inst_berkeleydb ; \
+		$(MAKE) EXTSRCDIR=${EXTSRCDIR} EGTPDIR=${EGTPDIR} OSTYPE=$(OSTYPE) inst_berkeleydb ; \
 	fi
 
 inst_berkeleydb_clean: check_vars
@@ -200,10 +200,10 @@ inst_pybsddb: berkeleydb
 	patch -p1 <../bsddb3-3.3.0-set_flags-fix.patch && \
 	patch -p0 <../bsddb3-3.3.0-moreargs.patch && \
 	echo yes | $(PYTHON) setup.py --libraries="$(DISTUTILS_LIBRARIES)" --library_dirs="$(DISTUTILS_LIBRARY_DIRS)" --include_dirs="$(DISTUTILS_INCLUDE_DIRS)" --extra_compile_args="$(DISTUTILS_EXTRA_COMPILE_ARGS)" --extra_link_args="$(DISTUTILS_EXTRA_LINK_ARGS)" --berkeley-db=${EXTSRCDIR}/BerkeleyDB build_ext --inplace
-	-if [ ! -d ${EVILDIR}/PythonLibs ]; then mkdir ${EVILDIR}/PythonLibs ; fi
-	-if [ ! -d ${EVILDIR}/PythonLibs/bsddb3 ]; then mkdir ${EVILDIR}/PythonLibs/bsddb3 ; fi
-	-cp ${EXTSRCDIR}/bsddb3-3.3.0/bsddb3/* ${EVILDIR}/PythonLibs/bsddb3
-	-rm -f ${EVILDIR}/common/bsddb3/__init__.pyc ${EVILDIR}/common/bsddb3/__init__.pyo
+	-if [ ! -d ${EGTPDIR}/PythonLibs ]; then mkdir ${EGTPDIR}/PythonLibs ; fi
+	-if [ ! -d ${EGTPDIR}/PythonLibs/bsddb3 ]; then mkdir ${EGTPDIR}/PythonLibs/bsddb3 ; fi
+	-cp ${EXTSRCDIR}/bsddb3-3.3.0/bsddb3/* ${EGTPDIR}/PythonLibs/bsddb3
+	-rm -f ${EGTPDIR}/common/bsddb3/__init__.pyc ${EGTPDIR}/common/bsddb3/__init__.pyo
 
 inst_pybsddb_clean:
 	@echo building target inst_pybsddb_clean
@@ -211,17 +211,17 @@ inst_pybsddb_clean:
 	rm -rf bsddb3-3.3.0 && \
 	rm -rf db-3-3.3.11 
 
-${EVILDIR}/PythonLibs/bsddb3/_db.so:
+${EGTPDIR}/PythonLibs/bsddb3/_db.so:
 	@if [ ! -f $@ ]; then \
-		$(MAKE) EXTSRCDIR=${EXTSRCDIR} EVILDIR=${EVILDIR} OSTYPE=${OSTYPE} inst_pybsddb ; \
+		$(MAKE) EXTSRCDIR=${EXTSRCDIR} EGTPDIR=${EGTPDIR} OSTYPE=${OSTYPE} inst_pybsddb ; \
 	fi
 
-pybsddb_module: bsddb3_obsolete_module_delete check_vars ${EVILDIR}/PythonLibs/bsddb3/_db.so
+pybsddb_module: bsddb3_obsolete_module_delete check_vars ${EGTPDIR}/PythonLibs/bsddb3/_db.so
 	@true
 
 # I echo "yes" to setup because on cf.sf.net's FreeBSD 4.3-RELEASE build box the python2.0 executable has an old bsddb statically linked in which causes setup.py to put up a warning and a "yes/no to continue".
 pybsddb_module_clean: check_vars
-	-rm -rf ${EVILDIR}/PythonLibs/bsddb3
+	-rm -rf ${EGTPDIR}/PythonLibs/bsddb3
 	-if [ -d ${EXTSRCDIR}/bsddb3-3.3.0 ]; then \
 		(cd ${EXTSRCDIR}/bsddb3-3.3.0 ; echo yes | $(PYTHON) setup.py clean --berkeley-db=${EXTSRCDIR}/BerkeleyDB ; rm -f bsddb3/_db.so) ; \
 	fi
@@ -231,18 +231,18 @@ pybsddb_module_clean: check_vars
 # which can cause problems if it is allowed to coexist with
 # the newer pybsddb module.
 bsddb3_obsolete_module_delete:
-	@-if [ -d ${EVILDIR}/common/bsddb3 ]; then echo "Removing obsolete directory ${EVILDIR}/common/bsddb3"; rm -rf ${EVILDIR}/common/bsddb3; fi
+	@-if [ -d ${EGTPDIR}/common/bsddb3 ]; then echo "Removing obsolete directory ${EGTPDIR}/common/bsddb3"; rm -rf ${EGTPDIR}/common/bsddb3; fi
 
 #
 # our faster mencode module
 #
 mencode_module: check_vars setup_dirs
 	@echo building target mencode_module
-	cd ${EVILDIR}/common/c_mencode && $(PYTHON) setup.py build_ext --inplace
+	cd ${EGTPDIR}/common/c_mencode && $(PYTHON) setup.py build_ext --inplace
 
 mencode_module_clean: check_vars
-	-rm -f ${EVILDIR}/common/c_mencode/*.so
-	-cd ${EVILDIR}/common/c_mencode && $(PYTHON) setup.py clean && rm -rf build
+	-rm -f ${EGTPDIR}/common/c_mencode/*.so
+	-cd ${EGTPDIR}/common/c_mencode && $(PYTHON) setup.py clean && rm -rf build
 
 #
 # Crypto++ 3.2 library
@@ -327,6 +327,8 @@ inst_cryptopp_42: check_vars
 	patch <../crypto42-limitedbuild-GNUmakefile.patch && \
 	patch < ../crypto42-ndebug-GNUmakefile.patch && \
 	patch < ../crypto42-ndebug2-GNUmakefile.patch && \
+	patch < ../crypto42-gcc31errs.patch && \
+	patch < ../crypto42-gcc31warns.patch && \
 	echo Checking gcc version && \
 	if [ "x`gcc --version 2>&1 | head -1 | grep egcs`" != "x" ]; then \
 		echo 'Removing -fpermissive compiler flag due to egcs' ; \
@@ -342,15 +344,15 @@ cryptopp: ${EXTSRCDIR}/cryptopp/libcryptopp.a
 ${EXTSRCDIR}/cryptopp/libcryptopp.a:
 	@if [ ! -f $@ ]; then \
 		if [ "X${USE_CRYPTOPP_32}" != "X" ]; then \
-			$(MAKE) EXTSRCDIR=${EXTSRCDIR} EVILDIR=${EVILDIR} inst_cryptopp_32 ; \
+			$(MAKE) EXTSRCDIR=${EXTSRCDIR} EGTPDIR=${EGTPDIR} inst_cryptopp_32 ; \
 		else \
 			if [ "X${USE_CRYPTOPP_40}" != "X" ]; then \
-				$(MAKE) EXTSRCDIR=${EXTSRCDIR} EVILDIR=${EVILDIR} OSTYPE=$(OSTYPE) inst_cryptopp_40 ; \
+				$(MAKE) EXTSRCDIR=${EXTSRCDIR} EGTPDIR=${EGTPDIR} OSTYPE=$(OSTYPE) inst_cryptopp_40 ; \
 			else \
 				if [ "X${USE_CRYPTOPP_41}" != "X" ]; then \
-					$(MAKE) EXTSRCDIR=${EXTSRCDIR} EVILDIR=${EVILDIR} OSTYPE=$(OSTYPE) inst_cryptopp_41 ; \
+					$(MAKE) EXTSRCDIR=${EXTSRCDIR} EGTPDIR=${EGTPDIR} OSTYPE=$(OSTYPE) inst_cryptopp_41 ; \
 				else \
-					$(MAKE) EXTSRCDIR=${EXTSRCDIR} EVILDIR=${EVILDIR} OSTYPE=$(OSTYPE) inst_cryptopp_42 ; \
+					$(MAKE) EXTSRCDIR=${EXTSRCDIR} EGTPDIR=${EGTPDIR} OSTYPE=$(OSTYPE) inst_cryptopp_42 ; \
 				fi \
 			fi \
 		fi \
@@ -373,7 +375,7 @@ inst_cryptopp_clean:
 #
 crypto_modules: check_vars cryptopp
 	@echo building target crypto_modules
-	@cd ${EVILDIR}/common/crypto/Python && \
+	@cd ${EGTPDIR}/common/crypto/Python && \
 	CRYPTOPP_DIR=${EXTSRCDIR}/cryptopp && export CRYPTOPP_DIR && \
 	if [ "X${USE_CRYPTOPP_32}" != "X" ]; then \
 		export CRYPTOPP_VERSION="3.2" ; \
@@ -389,10 +391,10 @@ crypto_modules: check_vars cryptopp
 		fi \
 	fi && \
 	$(PYTHON) setup.py --libraries="$(DISTUTILS_LIBRARIES)" --library_dirs="$(DISTUTILS_LIBRARY_DIRS)" --include_dirs="$(DISTUTILS_INCLUDE_DIRS)" --extra_compile_args="$(DISTUTILS_EXTRA_COMPILE_ARGS)" --extra_link_args="$(DISTUTILS_EXTRA_LINK_ARGS)" build_ext --inplace
-	@echo ======== add ${EVILDIR}/common/crypto/Python to your PYTHONPATH ========
+	@echo ======== add ${EGTPDIR}/common/crypto/Python to your PYTHONPATH ========
 
 crypto_modules_clean:
-	-cd ${EVILDIR}/common/crypto/Python && \
+	-cd ${EGTPDIR}/common/crypto/Python && \
 	CRYPTOPP_DIR=${EXTSRCDIR}/cryptopp && export CRYPTOPP_DIR && \
 	if [ "X${USE_CRYPTOPP_32}" != "X" ]; then \
 		export CRYPTOPP_VERSION="3.2" ; \
@@ -414,7 +416,7 @@ crypto_modules_clean:
 # co_pyutil 
 
 co_pyutil:
-	@cd ${EVILDIR}/PythonLibs && \
+	@cd ${EGTPDIR}/PythonLibs && \
 	touch ${HOME}/.cvspass && \
 	if [ "`grep anonymous@cvs.pyutil ${HOME}/.cvspass`" = "" ]; then \
 		echo ":pserver:anonymous@cvs.pyutil.sourceforge.net:/cvsroot/pyutil A" >>${HOME}/.cvspass ; \

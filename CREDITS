@@ -69,3 +69,10 @@ E: myers@fil.org
 W: http://maski.org/wxBroker/
 D: wrote the wxBroker GUI 
 P: 1024D/6CC865C5 F8BC 977B 1AFF 20DB F5CF  E362 915D 00A6 6CC8 65C5
+
+N: Faried Nawaz
+E: fn@hungry.org
+W: http://web.nilpotent.org/
+P: 0x6EF5F4A3, C2 BA 5E 00 81 B9 C0 F4 E8 37 C9 CE 40 0D 4A 7D 6E F5 F4 A3
+D: patched build script
+
