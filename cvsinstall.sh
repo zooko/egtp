@@ -39,6 +39,7 @@ cvs -z3 -d:pserver:anonymous@cvs.egtp.sourceforge.net:/cvsroot/egtp co egtp exts
 # "co"'ing egtp and extsrc here, you cd into each directory and run 
 # "cvs update -Pd" in each one.
 
+# Set these two environment variables to be the absolute path to the respective directories:
 EVILDIR=${PWD}/egtp; export EVILDIR
 EXTSRCDIR=${PWD}/extsrc; export EXTSRCDIR
 cd egtp
