@@ -12,7 +12,7 @@
 # the sub modules that import things from this (debug, confutils,
 # mojoutil, idlib, etc..)
 #
-__cvsid = '$Id: mojostd.py,v 1.6 2002/04/26 20:53:48 zooko Exp $'
+__cvsid = '$Id: mojostd.py,v 1.7 2002/06/25 03:51:47 zooko Exp $'
 
 
 ### Imports:
@@ -924,8 +924,8 @@ confman["PATH"] = mypathdict
     Instead, do this:
 
 # Begin Code Example:
-import mojoutil
-mojoutil.recursive_dict_update(confman["PATH"], mypathdict)
+import dictutil
+dictutil.deep_update(confman["PATH"], mypathdict)
 # End Code Example.
 
 -   If you don't assign any values to confman, you may omit the confman.save() call.
@@ -937,7 +937,7 @@ mojoutil.recursive_dict_update(confman["PATH"], mypathdict)
         in the form of 'confdefaults["PATH"][ <key name> ] = <path name>'.  If it is a directory, the keyname
         must end with '_DIR', if it is not a directory it must not end with that string.
     - Other data is a free for all.  Add it in the '^### Configuration Defaults' section, '^## Application Data'
-        subsection.  There is a call to mojoutil.recursive_dict_update.  Add you're arbitrary string-only dict
+        subsection.  There is a call to dictutil.deep_update.  Add you're arbitrary string-only dict
         to the second argument.  (Follow the existing example, it's pretty straight forward.)
     - Add a comment containing 'XXX CONFIG' to tag code for later review by the Nefarious Junior Code Monkey.
         (Note: Although his trainers do a good job of getting him to perform the "assimilate into confutils" job,
@@ -1159,8 +1159,8 @@ def gen_per_kb_price_dict(onekbprice, scalingfactor=0.95) : # XXX Shouldn't this
 
 
 ## Application Data:
-dictutil.recursive_dict_update(confdefaults,
-        {
+dictutil.deep_update(confdefaults,
+                     dictutil.UtilDict({
             "MAX_VERBOSITY" : "2",
             "EGTP_VERSION_STR" : EGTPVersion.versionstr_full,
             
@@ -1515,8 +1515,8 @@ dictutil.recursive_dict_update(confdefaults,
                             "DOWNLOAD_TYPES": str(20),
                         },
                 },
-        }
-    ) # dictutil.recursive_dict_update()
+        })
+    ) # dictutil.deep_update()
 
 
 # On windows we have a simple gui window to act as a broker navbar.
@@ -1557,7 +1557,10 @@ def lines_to_dict(lines):
             while (last < len(lines)) and (string.find(lines[last], string.lstrip(lines[last])) > indent):
                 last = last + 1
             dict[key] = lines_to_dict(lines[first:last])
-    return dict
+    if len(dict) == 0:
+        return None
+    else:
+        return dict
 
 def dict_to_lines(dict):
     '''Flatten a dict into human-readable lines.  (Sorts each same-depth tier lexographically.)'''
@@ -1569,7 +1572,10 @@ def dict_to_lines(dict):
             lines.append(str(key) + ":\n")
             lines = lines + map(lambda l: "\t" + l, dict_to_lines(dict[key]))
         else:
-            lines.append("%s: %s\n" % (str(key), str(dict[key])))
+            if dict[key] is not None:
+                lines.append("%s: %s\n" % (str(key), str(dict[key])))
+            else:
+                lines.append("%s:\n" % str(key))
     return lines
 
 ### Classes:
@@ -1594,7 +1600,7 @@ class ConfManager(UserDict.UserDict):
         self.touch()
         file = open(os.path.expandvars(self.dict["PATH"]["BROKER_CONF"]))
         filedict = lines_to_dict(file.readlines())
-        dictutil.recursive_dict_update(self.dict, filedict)
+        dictutil.deep_update(self.dict, filedict)
         file.close()
         if VersionNumber(self.dict.get("EGTP_VERSION_STR")) != VersionNumber(EGTPVersion.versionstr_full):
             mojolog.write("NOTE: Loading '%s' version config file while running '%s' version confutils\n" % (self.dict.get("EGTP_VERSION_STR"), EGTPVersion.versionstr_full))
