@@ -25,8 +25,6 @@ import types
 import Cache
 from CleanLogDb import CleanLogDbEnv
 import HashRandom
-from MojoConstants import true, false
-import MojoConstants
 import MojoKey
 import confutils
 import cryptutil
@@ -39,7 +37,12 @@ import mojosixbit
 import mojoutil
 import randsource
 
-from MojoConstants import SIZE_OF_MODULAR_VALUES, SIZE_OF_UNIQS, HARDCODED_RSA_PUBLIC_EXPONENT 
+true = 1
+false = 0
+
+SIZE_OF_MODULAR_VALUES = 128
+SIZE_OF_UNIQS = 20
+HARDCODED_RSA_PUBLIC_EXPONENT = 3
 
 
 # Size of public keys generated here-in.

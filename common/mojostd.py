@@ -12,7 +12,7 @@
 # the sub modules that import things from this (debug, confutils,
 # mojoutil, idlib, etc..)
 #
-__cvsid = '$Id: mojostd.py,v 1.3 2002/02/10 23:42:30 zooko Exp $'
+__cvsid = '$Id: mojostd.py,v 1.4 2002/02/11 00:03:26 zooko Exp $'
 
 
 ### Imports:
@@ -656,6 +656,102 @@ def mgf1(seed, intendedlength):
     s = HashRandom.SHARandom(seed)
     return s.get(intendedlength)
 
+def oaep(m, emLen, p=""):
+    """
+    OAEP from PKCS #1 v2.  Not bitwise correct -- different encodings, length granularity, etc.
+
+    Remember that modvals prefer an input of size SIZE_OF_MODULAR_VALUES, where oaep() returns a
+    padded thingie of size SIZE_OF_MODULAR_VALUES - 1.  The thing to do is prepend a 0 byte
+    before passing to modval.
+
+    @param m the message to be encoded
+    @param emLen the intended length of the padded form (should be 128)
+    @param p encoding parameters; we use empty string
+
+    @precondition The length of `p' must be less than or equal to the input limitation for SHA-1.: len(p) <= ((2^61)-1): "p: %s" % hr(p)
+    @precondition `emLen' must be big enough.: emLen >= (2 * 20) + 1: "emLen: %s, 20: %s" % (hr(emLen), hr(20))
+    @precondition The length of `m' must be small enough to fit.: len(m) <= (emLen - (2 * 20) - 1): "emLen: %s, 20: %s" % (hr(emLen), hr(20))
+    """
+    assert len(p) <= ((2^61)-1), "The length of `p' must be less than or equal to the input limitation for SHA-1." + " -- " + "p: %s" % hr(p)
+    assert emLen >= (2 * 20) + 1, "`emLen' must be big enough." + " -- " + "emLen: %s, 20: %s" % (hr(emLen), hr(20))
+    assert len(m) <= (emLen - (2 * 20) - 1), "The length of `m' must be small enough to fit." + " -- " + "emLen: %s, 20: %s" % (hr(emLen), hr(20))
+
+    hLen = 20
+
+    # mojolog.write("mojoutil.oaep(): -- -- -- -- -- -- m: %s\n" % hr(m))
+    # mojolog.write("mojoutil.oaep(): -- -- -- -- -- -- emLen: %s\n" % hr(emLen))
+    ps = '\000' * (emLen - len(m) - (2 * hLen) - 1)
+    # mojolog.write("mojoutil.oaep(): -- -- -- -- -- -- ps: %s\n" % hr(ps))
+    pHash = sha.new(p).digest()
+    db = pHash + ps + '\001' + m
+    # mojolog.write("mojoutil.oaep(): -- -- -- -- -- -- db: %s\n" % hr(db))
+    seed = randsource.get(hLen)
+    dbMask = mgf1(seed, emLen - hLen)
+    maskedDB = xor(db, dbMask)
+    seedMask = mgf1(maskedDB, hLen)
+    maskedSeed = xor(seed, seedMask)
+    em = maskedSeed + maskedDB
+
+    assert len(em) == emLen
+
+    # mojolog.write("mojoutil.oaep(): -- -- -- -- -- -- em: %s\n" % hr(em))
+    return em
+
+def oaep_decode(em, p=""):
+    """
+    Remember that modvals output cleartext of size SIZE_OF_MODULAR_VALUES, where oaep() needs a
+    padded thingie of size SIZE_OF_MODULAR_VALUES - 1.  The thing to do is pop off the prepended
+    0 byte before passing to oaep_decode().  (Feel free to check whether it is zero and raise a
+    bad-encoding error if it isn't.)
+
+    @param em the encoded message
+    @param p encoding parameters; we use empty string
+
+    @precondition The length of `p' must be less than or equal to the input limitation for SHA-1.: len(p) <= ((2^61)-1)
+    """
+    assert len(p) <= ((2^61)-1), "The length of `p' must be less than or equal to the input limitation for SHA-1."
+
+    # mojolog.write("mojoutil.oaep_decode(): -- -- -- -- -- -- em: %s\n" % hr(em))
+
+    if len(em) < (2 * 20) + 1:
+        raise OAEPError, "decoding error: `em' is not long enough."
+
+    hLen = 20
+    maskedSeed = em[:hLen]
+    # mojolog.write("mojoutil.oaep_decode(): -- -- -- -- -- -- maskedSeed: %s\n" % hr(maskedSeed))
+    maskedDB = em[hLen:]
+    # mojolog.write("mojoutil.oaep_decode(): -- -- -- -- -- -- maskedDB: %s\n" % hr(maskedDB))
+    assert len(maskedDB) == (len(em) - hLen)
+    seedMask = mgf1(maskedDB, hLen)
+    # mojolog.write("mojoutil.oaep_decode(): -- -- -- -- -- -- seedMask: %s\n" % hr(seedMask))
+    seed = xor(maskedSeed, seedMask)
+    # mojolog.write("mojoutil.oaep_decode(): -- -- -- -- -- -- seed: %s\n" % hr(seed))
+    dbMask = mgf1(seed, len(em) - hLen)
+    # mojolog.write("mojoutil.oaep_decode(): -- -- -- -- -- -- dbMask: %s\n" % hr(dbMask))
+    db = xor(maskedDB, dbMask)
+    # mojolog.write("mojoutil.oaep_decode(): -- -- -- -- -- -- db: %s\n" % hr(db))
+    pHash = sha.sha(p).digest()
+
+    pHashPrime = db[:hLen]
+
+    # Now looking for `ps'...
+    i = hLen
+    while db[i] == '\000':
+        if i >= len(db):
+            raise OAEPError, "decoding error: all 0's -- no m found"
+
+        i = i + 1
+
+    if db[i] != '\001':
+        raise OAEPError, "decoding error: no 1 byte separator found before m -- db: %s, i: %s, db[i:]: %s\n" % (str(db), str(i), str(db[i:]))
+
+    m = db[i+1:] # This is here instead of after the check because that's the way it is written in the PKCS doc.  --Zooko 2000-07-29
+
+    if pHash != pHashPrime:
+        raise OAEPError, "decoding error: pHash: %s != pHashPrime: %s" % (hr(pHash), hr(pHashPrime))
+
+    return m
+
 def get_rand_lt_n(seed, n):
     """
     @param n a modval
@@ -687,8 +783,8 @@ def _canon(numstr, size):
     """
     @param numstr the string representation of an integer which will be canonicalized
     @param size the size in 8-bit bytes (octets) that numbers of this kind should have;  This
-        number should almost always be MojoConstants.SIZE_OF_UNIQS or
-        MojoConstants.SIZE_OF_MODULAR_VALUES
+        number should almost always be 20 or
+        128
 
     @return the canonical version of `numstr' for numbers of its type
 
@@ -1525,7 +1621,7 @@ class ConfManager(UserDict.UserDict):
             self.dict['TCP_CONNECT_TIMEOUT'] = 30
 
         # note for hackers
-        self.dict['DEBUG_MODE'] = "please set operating system env var 'EVILDEBUG' or change MojoConstants.py instead of using this variable"
+        self.dict['DEBUG_MODE'] = "please set operating system env var 'PYUTILDEBUG' instead of using this variable"
         # The reason for this is that there are some inner loops that get defined to behave more or less debuggishly at module load time.  If you use this runtime variable, the runtime and load time "debug" flags could be different, causing confusion.
         return
 

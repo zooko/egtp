@@ -18,7 +18,6 @@ import CommStrat
 import DataTypes
 import DoQ
 import LazySaver
-import MojoConstants
 import MojoMessage
 import OurMessages
 from confutils import confman

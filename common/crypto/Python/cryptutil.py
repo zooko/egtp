@@ -9,10 +9,11 @@
 
 
 ### our modules
-from mojostd import cryptutilError, OAEPError, xor, hmac, hmacish, mgf1, oaep, oaep_decode, get_rand_lt_n, get_rand_lt_n_with_prepended_0
+from mojostd import cryptutilError, OAEPError, oaep, oaep_decode, xor, hmac, hmacish, mgf1, get_rand_lt_n, get_rand_lt_n_with_prepended_0
 
 import tripledescbc
 import HashRandom
+
 
 
 def hashexpand(inpstr, expbytes, HRClass=HashRandom.SHARandom):

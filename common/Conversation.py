@@ -5,9 +5,9 @@
 #    GNU Lesser General Public License v2.1.
 #    See the file COPYING or visit http://www.gnu.org/ for details.
 #
-__cvsid = '$Id: Conversation.py,v 1.1 2002/01/29 20:07:07 zooko Exp $'
+__cvsid = '$Id: Conversation.py,v 1.2 2002/02/11 00:03:26 zooko Exp $'
 
-### standard modules
+# standard modules
 import threading
 import types
 import traceback
@@ -20,13 +20,11 @@ import os
 import types
 from traceback import print_exc
 
-### our modules
+# our modules
 import Cache
 from CommHints import HINT_EXPECT_RESPONSE, HINT_EXPECT_MORE_TRANSACTIONS, HINT_EXPECT_NO_MORE_COMMS, HINT_EXPECT_TO_RESPOND, HINT_THIS_IS_A_RESPONSE, HINT_NO_HINT
 import CommStrat
 import DoQ
-import MojoConstants
-from MojoConstants import true, false
 import MojoKey
 import MojoMessage
 from confutils import confman
@@ -38,7 +36,11 @@ import modval
 import mojosixbit
 import mojoutil
 import randsource
+import std
 from MojoHandicapper import DISQUALIFIED
+
+true = 1
+false = 0
 
 debugwrite = debug.mojolog.write
 
@@ -112,7 +114,7 @@ class ConversationManager:
         """
         return self.__outstanding_messages.get(counterparty_id, 0) * TUNING_FACTOR
 
-    def initiate_and_return_first_message(self, counterparty_id, conversationtype, firstmsgbody, outcome_func, timeout = MojoConstants.DEFAULT_TIMEOUT, notes = None, mymetainfo=None, post_timeout_outcome_func=None):
+    def initiate_and_return_first_message(self, counterparty_id, conversationtype, firstmsgbody, outcome_func, timeout = 300, notes = None, mymetainfo=None, post_timeout_outcome_func=None):
         """
         @precondition `counterparty_id' must be  an id.: idlib.is_sloppy_id(counterparty_id): "id: %s" % hr(id)
 
@@ -214,7 +216,7 @@ class ConversationManager:
         message's integrity and either send it to a handler func to generate a response or send
         it to the appropriate callback func.
 
-        @returns a tuple whose first element is the full msg body (containing a 'mojo header' and/or 'mojo message' subdict) in dict form and whose second element is a CommHint, or MojoConstants.NO_RESPONSE or MojoConstants.ASYNC_RESPONSE
+        @returns a tuple whose first element is the full msg body (containing a 'mojo header' and/or 'mojo message' subdict) in dict form and whose second element is a CommHint, or std.NO_RESPONSE or std.ASYNC_RESPONSE
 
         @throws MojoMessage.BadFormatError if the message isn't properly formatted in
             MojoMessage format
@@ -222,7 +224,7 @@ class ConversationManager:
         @precondition `counterparty_id' must be an id.: idlib.is_sloppy_id(counterparty_id): "counterparty_id: %s" % hr(counterparty_id)
 
         @postcondition Result must not be `None'.: result is not None: "result: %s" % hr(result)
-        @postcondition Result must be either MojoConstants.NO_RESPONSE or MojoConstants.ASYNC_RESPONSE or else a tuple whose first element is the full msg body dict and whose second element is a commshint, containing either a "mojo header" subdict or a "mojo message" subdict or both.: (result is MojoConstants.NO_RESPONSE) or (result is MojoConstants.ASYNC_RESPONSE) or ((type(result) in (types.TupleType, types.ListType,)) and (len(result) == 2) and is_mojo_message(result[0]) and CommHints.is_hint(result[1])): "result: %s" % hr(result)
+        @postcondition Result must be either std.NO_RESPONSE or std.ASYNC_RESPONSE or else a tuple whose first element is the full msg body dict and whose second element is a commshint, containing either a "mojo header" subdict or a "mojo message" subdict or both.: (result is std.NO_RESPONSE) or (result is std.ASYNC_RESPONSE) or ((type(result) in (types.TupleType, types.ListType,)) and (len(result) == 2) and is_mojo_message(result[0]) and CommHints.is_hint(result[1])): "result: %s" % hr(result)
         """ 
         assert idlib.is_sloppy_id(counterparty_id), "precondition: `counterparty_id' must be an id." + " -- " + "counterparty_id: %s" % hr(counterparty_id)
 
@@ -249,10 +251,10 @@ class ConversationManager:
             # this is a first message
             if (reference is not None) or (recipient_id is None):
                 debug.stderr.write("WARNING: a Mojo Message arrived with inconsistent conversation markers: nonce: %s, reference: %s, recipient_id: %s\n", args=(nonce, reference, recipient_id), v=1, vs="conversation")
-                return MojoConstants.NO_RESPONSE
+                return std.NO_RESPONSE
             if not idlib.is_sloppy_id(nonce) :
                 debug.stderr.write("WARNING: a Mojo Message arrived with badly formed nonce: %s\n", args=(nonce,), v=1, vs="conversation")
-                return MojoConstants.NO_RESPONSE
+                return std.NO_RESPONSE
             conversationtype = MojoMessage.getType(msg)
 
             # We now have a hint -- we're expecting to respond to this.
@@ -262,14 +264,14 @@ class ConversationManager:
 
             if self._map_inmsgid_to_info.has_key(msgId):
                 # This can only happen if we have already started processing this unique message.
-                return MojoConstants.ASYNC_RESPONSE
+                return std.ASYNC_RESPONSE
             self._map_inmsgid_to_info[msgId] = (counterparty_id, MojoMessage.getType(msg), EXPECTING_RESPONSE)
             # Reminder: do not somehow change this handle_initiating_message call to be on the DoQ in the future without changing
             # the MTM.__in_message_for_you logic used in fast relay to prevent nested 'message for you' messages.  -greg
             result = self._MTM.handle_initiating_message(counterparty_id, conversationtype, MojoMessage.getBody(msg), firstmsgId=msgId) 
             if result is None:
-                result = MojoConstants.NO_RESPONSE
-            if result is MojoConstants.NO_RESPONSE:
+                result = std.NO_RESPONSE
+            if result is std.NO_RESPONSE:
                 self.drop_request_state(msgId)
             if (type(result) in (types.TupleType, types.ListType,)) and (len(result) == 2) and is_mojo_message(result[0]) and CommHints.is_hint(result[1]):
                 (response, commhints,) = result
@@ -277,8 +279,8 @@ class ConversationManager:
                 response = result
                 commhints = HINT_NO_HINT
 
-            assert (response in (MojoConstants.NO_RESPONSE, MojoConstants.ASYNC_RESPONSE,)) or is_mojo_message(response), 'Result must be either None or else the full msg body dict, containing either a "mojo header" subdict or a "mojo message" subdict or both.' + ' -- ' + "result: %s" % hr(result)
-            if response in (MojoConstants.NO_RESPONSE, MojoConstants.ASYNC_RESPONSE,):
+            assert (response in (std.NO_RESPONSE, std.ASYNC_RESPONSE,)) or is_mojo_message(response), 'Result must be either None or else the full msg body dict, containing either a "mojo header" subdict or a "mojo message" subdict or both.' + ' -- ' + "result: %s" % hr(result)
+            if response in (std.NO_RESPONSE, std.ASYNC_RESPONSE,):
                 return response
             else:
                 return (response, commhints,)
@@ -286,7 +288,7 @@ class ConversationManager:
             # this is a response message
             if (reference is None) or (recipient_id is not None):
                 debug.stderr.write("WARNING: a Mojo Message arrived with inconsistent conversation markers: nonce: %s, reference: %s, recipient_id: %s\n", args=(nonce, reference, recipient_id), v=1, vs="conversation")
-                return MojoConstants.NO_RESPONSE
+                return std.NO_RESPONSE
 
             responsetype = MojoMessage.getType(msg)
 
@@ -302,7 +304,7 @@ class ConversationManager:
                 if recipient_id is not None:
                     del self.__posttimeout_callback_functions[reference]  # proactively clean up this cache
                 if not idlib.equal(recipient_id, counterparty_id):
-                    return MojoConstants.NO_RESPONSE
+                    return std.NO_RESPONSE
                 # log the late response
                 if conversationtype is not None:
                     debug.mojolog.write("received %s to msgId %s %s from %s %s seconds after the timeout\n", args=(responsetype, reference, conversationtype, counterparty_id, "%0.2f" % (time() - msgtimeout)), v=2, vs='Conversation')
@@ -317,10 +319,10 @@ class ConversationManager:
                     num = self.__outstanding_messages.get(recipient_id, 0)
                     if num > 0:  # make sure it stays >= 0 just in case threaded access happened somehow and messed it up
                         self.__outstanding_messages[recipient_id] = num - 1
-                    return MojoConstants.NO_RESPONSE
+                    return std.NO_RESPONSE
 
             if not idlib.equal(counterparty_id, recipient_id):
-                return MojoConstants.NO_RESPONSE
+                return std.NO_RESPONSE
 
             # keep track of the number of outstanding response messages for handicapping purposes
             num = self.__outstanding_messages.get(recipient_id, 0)
@@ -329,7 +331,7 @@ class ConversationManager:
 
             if conversationtype + ' response' != responsetype:
                 debug.mojolog.write("message of unexpected type %s from %s in response to a %s\n", args=(responsetype, counterparty_id, conversationtype), v=3, vs='Conversation')
-                return MojoConstants.NO_RESPONSE
+                return std.NO_RESPONSE
 
             # Do hints about expecting responses...
             if commstrat:
@@ -342,7 +344,7 @@ class ConversationManager:
                         pass
 
             callback_function(outcome=MojoMessage.getBody(msg), notes=notes)
-            return MojoConstants.NO_RESPONSE
+            return std.NO_RESPONSE
 
     def handle_raw_message(self, counterparty_id, inmsg, commstrat=None):
         """
@@ -379,9 +381,9 @@ class ConversationManager:
 
             result = self._process(inmsg, msgId, counterparty_id, commstrat)
             assert result is not None, "Result must not be `None'." + " -- " + "result: %s" % hr(result)
-            assert (result is MojoConstants.NO_RESPONSE) or (result is MojoConstants.ASYNC_RESPONSE) or ((type(result) in (types.TupleType, types.ListType,)) and (len(result) == 2) and is_mojo_message(result[0]) and CommHints.is_hint(result[1])), "postcondition: Result must be either MojoConstants.NO_RESPONSE or MojoConstants.ASYNC_RESPONSE or else a tuple whose first element is the full msg body dict, containing either a \"mojo header\" subdict or a \"mojo message\" subdict or both." + "--" + "result: %s" % hr(result)
+            assert (result is std.NO_RESPONSE) or (result is std.ASYNC_RESPONSE) or ((type(result) in (types.TupleType, types.ListType,)) and (len(result) == 2) and is_mojo_message(result[0]) and CommHints.is_hint(result[1])), "postcondition: Result must be either std.NO_RESPONSE or std.ASYNC_RESPONSE or else a tuple whose first element is the full msg body dict, containing either a \"mojo header\" subdict or a \"mojo message\" subdict or both." + "--" + "result: %s" % hr(result)
 
-            if result not in (MojoConstants.ASYNC_RESPONSE, MojoConstants.NO_RESPONSE):
+            if result not in (std.ASYNC_RESPONSE, std.NO_RESPONSE):
                 self.send_response(msgId, result[0], hint=result[1])
 
         except MojoMessage.BadFormatError, le:

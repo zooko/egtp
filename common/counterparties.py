@@ -13,7 +13,7 @@
 # us, their reputation for coming through with their deals in our eyes,
 # etc.
 #
-__cvsid = '$Id: counterparties.py,v 1.1 2002/01/29 20:07:07 zooko Exp $'
+__cvsid = '$Id: counterparties.py,v 1.2 2002/02/11 00:03:26 zooko Exp $'
 
 
 # Standard Modules:
@@ -306,7 +306,7 @@ class CounterpartyObject :
 
     def synch(self) :
         assert hasattr(self, 'trans') and (self.trans is None), 'should only call synch once per transaction self: %s, self.__dict__: %s' % (hr(self), hr(self.__dict__))
-        self.keeper.extres.db_env.nosyncerror_txn_checkpoint(MINS_BETWEEN_DB_CHECKPOINTS)
+        self.keeper.extres.db_env.nosyncerror_txn_checkpoint(10)
         self.trans = self.keeper.extres.db_env.txn_begin()
         # debug.mojolog.write("xxx %s.synch() stack[-5:-1]: %s\n", args=(self, traceback.extract_stack()[-5:-1],))
 

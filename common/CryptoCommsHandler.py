@@ -4,7 +4,7 @@
 #    GNU Lesser General Public License v2.1.
 #    See the file COPYING or visit http://www.gnu.org/ for details.
 #
-__cvsid = '$Id: CryptoCommsHandler.py,v 1.1 2002/01/29 20:07:07 zooko Exp $'
+__cvsid = '$Id: CryptoCommsHandler.py,v 1.2 2002/02/11 00:03:26 zooko Exp $'
 
 # standard modules
 import traceback
@@ -13,13 +13,15 @@ import sha
 import string
 import zlib
 
+# pyutil modules
+from config import DEBUG_MODE, REALLY_SLOW_DEBUG_MODE
+
 # our modules
 import Cache
 import CommsError
 import CommStrat
 from CommHints import HINT_EXPECT_RESPONSE, HINT_EXPECT_MORE_TRANSACTIONS, HINT_EXPECT_NO_MORE_COMMS, HINT_EXPECT_TO_RESPOND, HINT_THIS_IS_A_RESPONSE, HINT_NO_HINT
 import DoQ
-import MojoConstants
 import MojoKey
 import confutils
 import debug
@@ -167,17 +169,17 @@ class CryptoCommsHandler:
 
             if lowerstrategy:
                 if hasattr(lowerstrategy, 'asyncsock'):
-                    if MojoConstants.REALLY_SLOW_DEBUG_MODE:
+                    if config.REALLY_SLOW_DEBUG_MODE:
                         debug.mojolog.write("WARNING: a message arrived with suggested lowerstrategy %s, asyncsock: %s, strategy_id_for_debug: %s, that couldn't be decrypted.  Perhaps it was cleartext, or garbled.  The message was %s.  The error was: %s, traceback: %s\n", args= (lowerstrategy.to_dict(), lowerstrategy.asyncsock, strategy_id_for_debug, msg, e, traceback.extract_stack(),), v=1, vs="crypto")
                     else:
                         debug.mojolog.write("WARNING: a message arrived with suggested lowerstrategy %s, asyncsock: %s, strategy_id_for_debug: %s, that couldn't be decrypted.  Perhaps it was cleartext, or garbled.  The message was %s.  The error was: %s\n", args= (lowerstrategy.to_dict(), lowerstrategy.asyncsock, strategy_id_for_debug, msg, e), v=1, vs="crypto")
                 else:
-                    if MojoConstants.REALLY_SLOW_DEBUG_MODE:
+                    if config.REALLY_SLOW_DEBUG_MODE:
                         debug.mojolog.write("WARNING: a message arrived with suggested lowerstrategy %s, strategy_id_for_debug: %s, that couldn't be decrypted.  Perhaps it was cleartext, or garbled.  The message was %s.  The error was: %s, traceback: %s\n", args=(lowerstrategy.to_dict(), strategy_id_for_debug, msg, e, traceback.extract_stack(),), v=1, vs="crypto")
                     else:
                         debug.mojolog.write("WARNING: a message arrived with suggested lowerstrategy %s, strategy_id_for_debug: %s, that couldn't be decrypted.  Perhaps it was cleartext, or garbled.  The message was %s.  The error was: %s\n", args=(lowerstrategy.to_dict(), strategy_id_for_debug, msg, e), v=1, vs="crypto")
             else:
-                if MojoConstants.REALLY_SLOW_DEBUG_MODE:
+                if config.REALLY_SLOW_DEBUG_MODE:
                     debug.mojolog.write("WARNING: a message arrived with suggested strategy_id_for_debug %s that couldn't be decrypted.  Perhaps it was cleartext, or garbled.  The message was %s.  The error was: %s, traceback: %s\n", args=(strategy_id_for_debug, msg, e, traceback.extract_stack(),), v=1, vs="crypto")
                 else:
                     debug.mojolog.write("WARNING: a message arrived with suggested strategy_id_for_debug %s that couldn't be decrypted.  Perhaps it was cleartext, or garbled.  The message was %s.  The error was: %s\n", args=(strategy_id_for_debug, msg, e), v=1, vs="crypto")

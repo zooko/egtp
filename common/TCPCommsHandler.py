@@ -26,10 +26,9 @@ from CommHints import HINT_EXPECT_RESPONSE, HINT_EXPECT_MORE_TRANSACTIONS, HINT_
 import CommStrat
 import DoQ
 import LazySaver
-from MojoConstants import DEBUG_MODE, REALLY_SLOW_DEBUG_MODE
+from config import DEBUG_MODE, REALLY_SLOW_DEBUG_MODE
 true = 1
 false = None
-import MojoConstants
 import TCPConnection
 import confutils
 import debug

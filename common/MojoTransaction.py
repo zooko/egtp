@@ -5,7 +5,7 @@
 #    GNU Lesser General Public License v2.1.
 #    See the file COPYING or visit http://www.gnu.org/ for details.
 #
-__cvsid = '$Id: MojoTransaction.py,v 1.2 2002/02/10 23:42:30 zooko Exp $'
+__cvsid = '$Id: MojoTransaction.py,v 1.3 2002/02/11 00:03:26 zooko Exp $'
 
 
 # standard modules
@@ -59,6 +59,7 @@ import mojosixbit
 import mojoutil
 from mojoutil import strpopL, intorlongpopL
 import randsource
+import std
 import timeutil
 import whrandom
 
@@ -73,7 +74,7 @@ else:
 
   
 class LookupHand(ILookupHandler):
-    def __init__(self, counterparty_id, msg, ch, hint=HINT_NO_HINT, fast_fail_handler=None, timeout=MojoConstants.DEFAULT_TIMEOUT):
+    def __init__(self, counterparty_id, msg, ch, hint=HINT_NO_HINT, fast_fail_handler=None, timeout=300):
         self._counterparty_id = counterparty_id
         self._msg = msg
         self._ch = ch
@@ -128,7 +129,7 @@ class PricerError(Error): pass
 
 class ResponseMarker: pass
 
-# The following symbols really just belong here in MojoTransaction.py, but Python's inability to do mutually recursive modules means that I can't access ConversationManager from here and also have ConversationManager access these symbols from Conversation.py.  So I'll just shove them into MojoConstants.  Bleah.  --Zooko 2000-09-28
+# The following symbols really just belong here in MojoTransaction.py, but Python's inability to do mutually recursive modules means that I can't access ConversationManager from here and also have ConversationManager access these symbols from Conversation.py.  So I'll just shove them into std.  Bleah.  --Zooko 2000-09-28
 
 # possible return value from an incoming message handler. # `ASYNC_RESPONSE' means I'll provide the response later.
 ASYNC_RESPONSE = ResponseMarker()
@@ -139,8 +140,8 @@ NO_RESPONSE = ResponseMarker()
 # Currently, handlers that handles _responding_ messages are assumed to have no response (that is: every transaction is a two-move protocol), so if you return `None' (the default return value in Python, same as what happens if you have no return statement at all), then it translates to `NO_RESPONSE' for you.  It wouldn't hurt to go ahead and return `NO_RESPONSE' from those handlers, if you wish to emphasize that they are there are no more moves in the protocol.
 
 # XXX this is very bad to be adding member to another module at run time!  please use this module's references to the above instead -g
-MojoConstants.ASYNC_RESPONSE = ASYNC_RESPONSE
-MojoConstants.NO_RESPONSE = NO_RESPONSE
+std.ASYNC_RESPONSE = ASYNC_RESPONSE
+std.NO_RESPONSE = NO_RESPONSE
 
 MIN_HELLO_DELAY=45 # never send hellos to MTs more often than this, even if you have new contact info
 MIN_REDUNDANT_HELLO_DELAY=450 # never send the same contact info to MTs more often than this
@@ -598,11 +599,11 @@ class MojoTransactionManager:
         """
         Invoke the appropriate server func.
 
-        @returns the full msg body to be sent back in response (containing a 'mojo header' and/or 'mojo message' subdict) in dict form, or None, or MojoConstants.ASYNC_RESPONSE
+        @returns the full msg body to be sent back in response (containing a 'mojo header' and/or 'mojo message' subdict) in dict form, or None, or std.ASYNC_RESPONSE
 
         @precondition `counterparty_id' must be an id.: idlib.is_sloppy_id(counterparty_id): "counterparty_id: %s" % hr(counterparty_id)
 
-        @postcondition Result must be either None or MojoConstants.ASYNC_REPONSE or else the full msg body dict, containing either a "mojo header" subdict or a "mojo message" subdict or both.: (not result) or (result is MojoConstants.ASYNC_RESPONSE) or result.has_key('mojo header') or result.has_key('mojo message'): "result: %s" % hr(result)
+        @postcondition Result must be either None or std.ASYNC_REPONSE or else the full msg body dict, containing either a "mojo header" subdict or a "mojo message" subdict or both.: (not result) or (result is std.ASYNC_RESPONSE) or result.has_key('mojo header') or result.has_key('mojo message'): "result: %s" % hr(result)
         """ 
         assert idlib.is_sloppy_id(counterparty_id), "precondition: `counterparty_id' must be an id." + " -- " + "counterparty_id: %s" % hr(counterparty_id)
 
@@ -646,7 +647,7 @@ class MojoTransactionManager:
         self.respond_with(firstmsgId, result, hint=hint)
         return None
 
-    def initiate(self, counterparty_id, conversationtype, firstmsgbody, outcome_func=None, timeout=MojoConstants.DEFAULT_TIMEOUT, notes = None, post_timeout_outcome_func=None, use_dynamic_timeout="iff there is a post_timeout_outcome_func", commstratseqno=None, hint=HINT_NO_HINT):
+    def initiate(self, counterparty_id, conversationtype, firstmsgbody, outcome_func=None, timeout=300, notes = None, post_timeout_outcome_func=None, use_dynamic_timeout="iff there is a post_timeout_outcome_func", commstratseqno=None, hint=HINT_NO_HINT):
         """
         Initiates a transaction with the specified counterparty.
 
@@ -709,7 +710,7 @@ class MojoTransactionManager:
             outcome_func = wrapped_outcome_func
         DoQ.doq.add_task(self._initiate, args=(counterparty_id, conversationtype, firstmsgbody, outcome_func,), kwargs={'timeout': timeout, 'post_timeout_outcome_func': post_timeout_outcome_func, 'use_dynamic_timeout':use_dynamic_timeout, 'commstratseqno': commstratseqno, 'hint': hint})
 
-    def _initiate(self, counterparty_id, conversationtype, firstmsgbody, outcome_func, timeout=MojoConstants.DEFAULT_TIMEOUT, post_timeout_outcome_func=None, use_dynamic_timeout=None, commstratseqno=None, hint=HINT_NO_HINT):
+    def _initiate(self, counterparty_id, conversationtype, firstmsgbody, outcome_func, timeout=300, post_timeout_outcome_func=None, use_dynamic_timeout=None, commstratseqno=None, hint=HINT_NO_HINT):
         """
         @precondition This method must be called on the DoQ.: DoQ.doq.is_currently_doq()
         """
@@ -881,7 +882,7 @@ class MojoTransactionManager:
             else:
                 return None
 
-    def send_message_with_lookup(self, counterparty_id, msg, timeout=MojoConstants.DEFAULT_TIMEOUT, hint=HINT_NO_HINT, commstratseqno=None):
+    def send_message_with_lookup(self, counterparty_id, msg, timeout=300, hint=HINT_NO_HINT, commstratseqno=None):
         """
         This just calls `send_message_with_lookup_internal()' from the DoQ thread.
        
@@ -934,7 +935,7 @@ class MojoTransactionManager:
         # MetaTrackerLib.neg_contact_info(counterparty_id) # XXX I think maybe this causes you to starve yourself of known counterparties and suffer a very poor Mojo Net.  --Zooko 2001-05-15
         self._ch.forget_comm_strategy(counterparty_id)
 
-    def send_message_with_lookup_internal(self, counterparty_id, msg, timeout=MojoConstants.DEFAULT_TIMEOUT, hint=HINT_NO_HINT, commstratseqno=None):
+    def send_message_with_lookup_internal(self, counterparty_id, msg, timeout=300, hint=HINT_NO_HINT, commstratseqno=None):
         """
         @precondition `counterparty_id' must be an id.: idlib.is_sloppy_id(counterparty_id): "counterparty_id: %s" % hr(counterparty_id)
         @precondition `msg' must be a string, and non-empty.: (type(msg) is types.StringType) and (len(msg) > 0): "msg: %s" % hr(msg)
@@ -980,7 +981,7 @@ class MojoTransactionManager:
             self._ch.send_msg(counterparty_id, msg, hint=hint, fast_fail_handler=fast_fail_handler, timeout=timeout, commstratseqno=commstratseqno)
             # debugprint(diagstr="sent.", v=15, vs="conversation")
         except MemoryError, le:
-            if MojoConstants.DEBUG_MODE:
+            if DEBUG_MODE:
                 debug.mojolog.write("MojoTransaction.send_message_with_lookup(): called `_ch.send_msg(%s, msgId:%s)' and got MemoryError: %s\n", args=(counterparty_id, msgId, le), v=0, vs="debug")
             fast_fail_handler(failure_reason=le)
             return
@@ -989,7 +990,7 @@ class MojoTransactionManager:
             fast_fail_handler(failure_reason=hr(le))
         # debugprint(diagstr="sent", v=15)
 
-    def __query_for_counterparty_and_send(self, counterparty_id, msg, timeout=MojoConstants.DEFAULT_TIMEOUT, fast_fail_handler=None, hint=HINT_NO_HINT):
+    def __query_for_counterparty_and_send(self, counterparty_id, msg, timeout=300, fast_fail_handler=None, hint=HINT_NO_HINT):
         def debugprint(self=self, counterparty_id=counterparty_id, msg=msg, diagstr="", args=(), v=0, vs="conversation"):
             printstr="---> %s: " + diagstr + "\n"
             theseargs=[counterparty_id]

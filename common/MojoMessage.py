@@ -6,17 +6,19 @@
 #    See the file COPYING or visit http://www.gnu.org/ for details.
 #
 
-### standard modules
+# standard modules
 import string
 import types
 
-### our modules
+# pyutil modules
+from config import DEBUG_MODE
+import debug
+from humanreadable import hr
+
+# our modules
 import Cache
 from DataTypes import BadFormatError, ANY, STRING, UNIQUE_ID, checkTemplate, OptionMarker, NON_NEGATIVE_INTEGER
 from MojoErrors import MojoMessageError
-from MojoConstants import DEBUG_MODE
-import debug
-from humanreadable import hr
 import idlib
 import mencode
 
