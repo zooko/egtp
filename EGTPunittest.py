@@ -6,7 +6,7 @@
 #    GNU Lesser General Public License v2.1.
 #    See the file COPYING or visit http://www.gnu.org/ for details.
 #
-__cvsid = '$Id: EGTPunittest.py,v 1.1 2002/04/11 13:59:23 zooko Exp $'
+__cvsid = '$Id: EGTPunittest.py,v 1.2 2002/04/21 16:25:36 zooko Exp $'
 
 # standard Python modules
 import threading, types, unittest
@@ -115,7 +115,7 @@ class Testy(unittest.TestCase):
         @param lm an object that satisfies the ILookupMan interface
         """
         finishedflag = threading.Event()
-        def doit(self=self, finishedflag=finishedflag):
+        def doit(self=self, finishedflag=finishedflag, lm=lm):
             key = CommStrat.addr_to_id(HARDCODED_GOOD_EGTP_ADDRESS)
             lm.publish(key, HARDCODED_GOOD_EGTP_ADDRESS)
             finishedflag.set()
@@ -165,29 +165,30 @@ class Testy(unittest.TestCase):
     def test_local_no_block_on_publish(self):
         self._help_test_no_block_on_publish(LocalLookupMan(NodeMappingVerifier()))
 
-    def test_tristero_no_block_on_construct(self):
-        """
-        This tests that calling `TristeroLookup()' does not block, not even for a second.
-        The real point is that `TristeroLookup()' should not block at all, even for a microsecond, and especially not in a way that sometimes blocks for a long time (i.e. waiting for network traffic).
-        """
-        finishedflag = threading.Event()
-        def doit(finishedflag=finishedflag):
-            TristeroLookup(NodeMappingVerifier(), "http://fnordovax.dyndns.org:10805")
-            finishedflag.set()
-        t = threading.Thread(target=doit)
-        t.start()
-        TIMELIMIT=1.0
-        finishedflag.wait(TIMELIMIT)
-        self.failUnless(finishedflag.isSet(), "didn't return from a call to `TristeroLookup()' within limit of %s seconds" % TIMELIMIT)
+## commenting out the Tristero tests because we don't have a Tristero server component useful for doing unit tests (i.e., tests that don't require any other manual setup by the human tester, and that don't give failures when there are problems such as networking outages that are unrelated to the source code being tested.  --Zooko 2002-04-21
+##    def test_tristero_no_block_on_construct(self):
+##        """
+##        This tests that calling `TristeroLookup()' does not block, not even for a second.
+##        The real point is that `TristeroLookup()' should not block at all, even for a microsecond, and especially not in a way that sometimes blocks for a long time (i.e. waiting for network traffic).
+##        """
+##        finishedflag = threading.Event()
+##        def doit(finishedflag=finishedflag):
+##            TristeroLookup(NodeMappingVerifier(), "http://fnordovax.dyndns.org:10805")
+##            finishedflag.set()
+##        t = threading.Thread(target=doit)
+##        t.start()
+##        TIMELIMIT=1.0
+##        finishedflag.wait(TIMELIMIT)
+##        self.failUnless(finishedflag.isSet(), "didn't return from a call to `TristeroLookup()' within limit of %s seconds" % TIMELIMIT)
 
-    def test_tristero_no_block_on_publish(self):
-        self._help_test_no_block_on_publish(TristeroLookup(NodeMappingVerifier(), "http://fnordovax.dyndns.org:10805"))
+##    def test_tristero_no_block_on_publish(self):
+##        self._help_test_no_block_on_publish(TristeroLookup(NodeMappingVerifier(), "http://fnordovax.dyndns.org:10805"))
+
+##    def test_tristero_send_and_receive(self):
+##        self._help_test_EGTP_send_and_receive(TristeroLookup(NodeMappingVerifier(), "http://fnordovax.dyndns.org:10805"))
 
     def test_local_send_and_receive(self):
         self._help_test_EGTP_send_and_receive(LocalLookupMan(NodeMappingVerifier()))
-
-    def test_tristero_send_and_receive(self):
-        self._help_test_EGTP_send_and_receive(TristeroLookup(NodeMappingVerifier(), "http://fnordovax.dyndns.org:10805"))
 
 if __name__ == '__main__':
     unittest.main()

@@ -6,7 +6,7 @@
 # See the end of this file for the free software, open source license (BSD-style).
 
 # CVS:
-__cvsid = '$Id: TristeroLookup.py,v 1.3 2002/03/28 18:39:50 zooko Exp $'
+__cvsid = '$Id: TristeroLookup.py,v 1.4 2002/04/21 16:25:36 zooko Exp $'
 
 # standard Python modules
 from xmlrpclib import *
@@ -186,7 +186,6 @@ class TristeroLookup(ILookupManager):
         @precondition key must be well-formed according to the verifier.: self.verifier.verify_key(key): "key: %s" % hr(key)
         @precondition key-object pair must be valid mapping according to the verifier.: self.verifier.verify_mapping(key, object): "key: %s, object: %s" % (hr(key), hr(object),)
         """
-        print "self.verifier: %s" % hr(self.verifier)
         assert self.verifier.verify_key(key), "precondition: key must be well-formed according to the verifier." + " -- " + "key: %s" % hr(key)
         assert self.verifier.verify_mapping(key, object), "precondition: key-object pair must be valid mapping according to the verifier." + " -- " + "key: %s, object: %s" % (hr(key), hr(object),)
 

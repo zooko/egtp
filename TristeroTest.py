@@ -6,7 +6,7 @@
 #    GNU Lesser General Public License v2.1.
 #    See the file COPYING or visit http://www.gnu.org/ for details.
 #
-__cvsid = '$Id: TristeroTest.py,v 1.2 2002/03/15 18:48:24 zooko Exp $'
+__cvsid = '$Id: TristeroTest.py,v 1.3 2002/04/21 16:25:36 zooko Exp $'
 
 # standard Python modules
 import threading, types
@@ -30,6 +30,7 @@ from interfaces import *
 import CommStrat
 import Node
 from TristeroLookup import TristeroLookup
+import NodeMappingVerifier
 
 true = 1
 false = 0
@@ -75,7 +76,8 @@ def _help_test(finishedflag, numsuccessesh, lm, dm, name="a test"):
     n2.send(CommStrat.addr_to_id(n1.get_address()), mtype="ping", msg="hello there, you crazy listener!")
 
 def test_1(finishedflag, numsuccessesh):
-    localLM = TristeroLookup("http://fnordovax.dyndns.org:10805")
+    verifier = NodeMappingVerifier.NodeMappingVerifier()
+    localLM = TristeroLookup(verifier, "http://numbers:4035")
     print 'TristeroLookup Service:', localLM
     localDM = LocalDiscoveryMan()
     _help_test(finishedflag, numsuccessesh, localLM, localDM, name="test_1")
