@@ -1,8 +1,9 @@
 How to install:
 
-xxx
+Please read "cvsinstall.sh" in the egtp/ directory, or at this URL:
 
-Suggestions for how to learn this API:
+
+How to learn the API:
 
 1.  The example: Look at EGTPtest.py, in the function named `test_1()' to see basic operation of 
 creating nodes and sending and receiving messages.
@@ -13,7 +14,7 @@ creating nodes and sending and receiving messages.
 lookup handlers, discovery managers, and discovery handlers in interfaces.py.
 
 3.a.
-    You can see local, non-distributed, for testing only implementations of the manager classes in 
+    You can see implementations of the manager classes (local, non-distributed, for-testing-only) in 
     EGTPtest.py.
 
 3.b.
