@@ -1,6 +1,8 @@
 How to install:
 
-Please read "cvsinstall.sh" in the egtp/ directory, or at this URL:
+You simply need to check out the source from public cvs and run "make" to build 
+it.  For step-by-step directions, please read "cvsinstall.sh" in the egtp/ 
+directory, or at this URL:
 
 http://cvs.sourceforge.net/cgi-bin/viewcvs.cgi/*checkout*/egtp/egtp/cvsinstall.sh?content-type=text/plain
 
