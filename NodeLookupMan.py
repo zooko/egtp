@@ -5,7 +5,7 @@
 # See the end of this file for the free software, open source license (BSD-style).
 
 # CVS:
-__cvsid = '$Id: NodeLookupMan.py,v 1.2 2002/03/16 14:14:34 zooko Exp $'
+__cvsid = '$Id: NodeLookupMan.py,v 1.3 2002/06/25 03:54:57 zooko Exp $'
 
 # standard Python modules
 import exceptions
@@ -87,8 +87,8 @@ class NodeLookupHand(interfaces.ILookupHandler):
 
         self.lh.result(object)
 
-    def fail(self, reason=""):
-        self.lh.fail(reason)
+    def done(self, failure_reason=None):
+        self.lh.done(failure_reason=failure_reason)
 
     def soft_timeout(self):
         self.lh.soft_timeout()

@@ -6,7 +6,7 @@
 #
 # A library for determining the IP addresses of the local machine.
 #
-__cvsid = '$Id: ipaddresslib.py,v 1.2 2002/02/11 14:47:57 zooko Exp $'
+__cvsid = '$Id: ipaddresslib.py,v 1.3 2002/06/25 03:54:57 zooko Exp $'
 
 # standard modules
 import sys
@@ -77,7 +77,7 @@ def get_primary_ip_address(nonroutableok) :
     """
     address = None
 
-    if confutils.confman.dict.get("IP_ADDRESS_OVERRIDE") :
+    if confutils.confman.dict.get("IP_ADDRESS_OVERRIDE"):
         # use the value from the config file if the user specified one
         address = confutils.confman.dict.get("IP_ADDRESS_OVERRIDE")
         debugprint('IP address override found in config file.  IP: %s\n', args=(address,), vs='ipaddresslib')
@@ -158,7 +158,7 @@ def get_primary_ip_address(nonroutableok) :
         raise NonRoutableIPError
 
     if not valid_ipaddr_re.match(str(address)) :
-        raise RuntimeError, "ipaddresslib could not figure out a valid IP address for your host"
+        raise RuntimeError, "ipaddresslib could not figure out a valid IP address for your host; invalid address: %s" % address
 
     return address
 

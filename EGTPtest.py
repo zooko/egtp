@@ -6,7 +6,7 @@
 #    GNU Lesser General Public License v2.1.
 #    See the file COPYING or visit http://www.gnu.org/ for details.
 #
-__cvsid = '$Id: EGTPtest.py,v 1.10 2002/03/21 22:22:54 zooko Exp $'
+__cvsid = '$Id: EGTPtest.py,v 1.11 2002/06/25 03:54:57 zooko Exp $'
 
 # standard Python modules
 import threading, types
@@ -46,7 +46,7 @@ class LocalLookupMan(ILookupManager):
         if self.data.has_key(key):
             lookuphand.result(self.data.get(key))
         else:
-            lookuphand.fail()
+            lookuphand.done(failure_reason="unexpected failure to find value in local dict")
         return # `lookup()' never returns any return value!
     def publish(self, egtpid, egtpaddr):
         """

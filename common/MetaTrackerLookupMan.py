@@ -5,7 +5,7 @@
 #    GNU Lesser General Public License v2.1.
 #    See the file COPYING or visit http://www.gnu.org/ for details.
 #
-__cvsid = '$Id: MetaTrackerLookupMan.py,v 1.2 2002/03/11 17:35:16 zooko Exp $'
+__cvsid = '$Id: MetaTrackerLookupMan.py,v 1.3 2002/06/25 03:54:57 zooko Exp $'
 
 
 # standard modules
@@ -36,10 +36,10 @@ class MetaTrackerLookupMan(ILookupMan):
         # The following func is to translate between the old MojoTransaction callback interface and the new ILookupHandler interface.
         def handler_func(widget, outcome, failure_reason=None, lookuphand=lookuphand):
             if failure_reason:
-                lookuphand.fail(failure_reason)
+                lookuphand.done(failure_reason=failure_reason)
                 return
             if (type(outcome) is not types.DictType) or (outcome.get('result') != 'success'):
-                lookuphand.fail("got failure message from meta tracker")
+                lookuphand.done(failure_reason="got failure message from meta tracker")
                 return
             lookuphand.result(outcome)
 

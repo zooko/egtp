@@ -6,7 +6,7 @@
 #    GNU Lesser General Public License v2.1.
 #    See the file COPYING or visit http://www.gnu.org/ for details.
 #
-__cvsid = '$Id: interfaces.py,v 1.3 2002/03/28 18:39:50 zooko Exp $'
+__cvsid = '$Id: interfaces.py,v 1.4 2002/06/25 03:54:57 zooko Exp $'
 
 # standard Python modules
 import exceptions
@@ -129,13 +129,18 @@ class ILookupHandler(IRemoteOpHandler):
         raise NotImplementedError
         pass
 
-    def fail(self, reason=""):
+    def done(self, failure_reason=None):
         """
-        Your lookup manager invokes this to let you know that he absolutely positively cannot find
-        the thing you were looking for.  There is no chance that he will later call `result()' for
-        this query.  You can safely forget all about this particular query.
+        The search is finished.  If it failed (i.e., if you haven't already received a result via
+        a call to the `result()' method), then `failure_reason' will contain a human-readable
+        string explaining for the failure.  (Most likely: "hard timeout".)
 
-        @param reason a string describing why it failed (used for human-readable diagnostic output)
+        Whether it was a failure or a success, your lookup manager invokes this to let you know
+        that after this point he absolutely positively cannot find the thing you were looking
+        for.  There is no chance that he will later call `result()' for this query.  You can
+        safely forget all about this particular query.
+
+        @param failure_reason None or a string describing why it failed
 
         @noblock This method may not block, either by waiting for network traffic, by waiting for a lock, or by sleeping.
         """
@@ -150,7 +155,8 @@ class ILookupHandler(IRemoteOpHandler):
         `result()', just as if the results had come in more promptly.
 
         A "hard" timeout, which means that the lookup manager gives up and will ignore any results
-        which come in after this point, is signalled by a call to `fail()'.
+        which come in after this point, is signalled by a call to `done()'. with a
+        `failure_reason' argument of "hard timeout".
 
         @noblock This method may not block, either by waiting for network traffic, by waiting for a lock, or by sleeping.
         """
@@ -209,21 +215,27 @@ class IDiscoveryHandler(IRemoteOpHandler):
         raise NotImplementedError
         pass
 
-    def fail(self, reason=""):
+    def done(self, failure_reason=None):
         """
-        Your discovery manager invokes this to let you know that he absolutely positively cannot
-        find the kind of things you were looking for.  There is no chance that he will later call
-        `result()' for this query.  You can safely forget all about this particular query.
+        The search is finished.  If it failed (i.e., if you haven't already received any result
+        via a call to the `result()' method), then `failure_reason' will contain a human-readable
+        string explaining for the failure.  (Most likely: "hard timeout".)
 
-        When does the discovery manager call `fail()' instead of calling `result(None)'?  The answer
-        is that `fail()' should indicate a technical failure (for example, the discovery man was
-        unable to send the query out, or the nodes that he queried did not send a response in a
-        timely way even though they were expected to do so), and `result(None)' should indicate that
-        everything is working fine as far as the discovery man can tell, but nobody knows the answer
-        to your query (for example, a reasonable number of nodes responded in a timely manner, but 
-        they all said they had no answer).  This distinction is necessarily fuzzy, but it can be
-        important as technical failure can trigger attempts to try alternate routes or to rebuild
-        your network, etc..
+        Whether the search succeeded or failed, your discovery manager invokes this to let you
+        know that after this point he absolutely positively cannot find the kind of things you
+        were looking for.  There is no chance that he will later call `result()' for this query.
+        You can safely forget all about this particular query.
+
+        When does the discovery manager consider it a failure and call `done()' with a non-None
+        `failure_reason' instead of calling `result(None)' and calling `done(None)'?  The answer
+        is that a "failure" should indicate a technical failure (for example, the discovery man
+        was unable to send the query out, or the nodes that he queried did not send a response in
+        a timely way even though they were expected to do so), and `result(None);done(None)'
+        should indicate that everything is working fine as far as the discovery man can tell, but
+        nobody knows the answer to your query (for example, a reasonable number of nodes responded
+        in a timely manner, but they all said they had no answer).  This distinction is
+        necessarily fuzzy, but it can be important as technical failure can trigger attempts to
+        try alternate routes or to rebuild your network, etc..
 
         @param reason a string describing why it failed (used for human-readable diagnostic output)
         """
@@ -238,7 +250,8 @@ class IDiscoveryHandler(IRemoteOpHandler):
         call `result()', just as if the results had come in more promptly.
 
         A "hard" timeout, which means that the lookup manager gives up and will ignore any results
-        which come in after this point, is signalled by a call to `fail()'.
+        which come in after this point, is signalled by a call to `done()' with `failure_reason'
+        "hard timeout"..
         """
         raise NotImplementedError
         pass 

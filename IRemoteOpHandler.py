@@ -7,7 +7,7 @@
 #    See the file COPYING or visit http://www.gnu.org/ for details.
 
 # CVS:
-__cvsid = '$Id: IRemoteOpHandler.py,v 1.1 2002/04/11 13:59:23 zooko Exp $'
+__cvsid = '$Id: IRemoteOpHandler.py,v 1.2 2002/06/25 03:54:57 zooko Exp $'
 
 # standard Python modules
 import exceptions
@@ -30,13 +30,18 @@ class IRemoteOpHandler:
         raise NotImplementedError
         pass
 
-    def fail(self, reason=""):
+    def done(self, failure_reason=None):
         """
-        Your remote op manager invokes this to let you know that he absolutely positively cannot get
-        the result you were looking for.  There is no chance that he will later call `result()' for
-        this operation.  You can safely forget all about this particular operation.
+        Your remote op manager invokes this to let you know that after this point, he absolutely
+        positively cannot get the result you were looking for.  There is no chance that he will
+        later call `result()' for this operation.  You can safely forget all about this particular
+        operation.
 
-        @param reason a string describing why it failed (used for human-readable diagnostic output)
+        If this operation is "done" because it has successfully been completed (i.e., the manager
+        has already called `result()', and given you the result that you were looking for), then
+        the `failure_reason' argument will be None.
+
+        @param failure_reason None or a string describing why it failed
         """
         raise NotImplementedError
         pass
@@ -49,7 +54,8 @@ class IRemoteOpHandler:
         call `result()', just as if the results had come in more promptly.
 
         A "hard" timeout, which means that the remote op manager gives up and will ignore any
-        results which come in after this point, is signalled by a call to `fail()'.
+        results which come in after this point, is signalled by a call to `done()' with a
+        `failure_reason' argument of "hard timeout".
         """
         raise NotImplementedError
         pass

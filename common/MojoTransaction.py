@@ -6,7 +6,7 @@
 #    GNU Lesser General Public License v2.1.
 #    See the file COPYING or visit http://www.gnu.org/ for details.
 #
-__cvsid = '$Id: MojoTransaction.py,v 1.10 2002/06/25 02:12:27 zooko Exp $'
+__cvsid = '$Id: MojoTransaction.py,v 1.11 2002/06/25 03:54:57 zooko Exp $'
 
 
 # Python standard library modules
@@ -92,10 +92,10 @@ class LookupHand(ILookupHandler):
         self._ch.use_comm_strategy(self._counterparty_id, CommStrat.dict_to_strategy(value["connection strategies"][0], mtm=self._ch._tcpch._mtm))
         self._ch.send_msg(self._counterparty_id, self._msg, hint=self._hint, fast_fail_handler=self._fast_fail_handler, timeout=self._timeout)
 
-    def fail(self):
-        # Hrm?  Not sure what to do here....  --Zooko 2002-01-27
-        debugprint("%s.fail()\n", args=(self,))
-        pass
+    def done(self, failure_reason=None):
+        if failure_reason is not None:
+            # Hrm?  Not sure what to do here....  --Zooko 2002-01-27
+            debugprint("%s.fail(%s)\n", args=(self, failure_reason,))
 
 """
 When any message arrives that initiates a new mojotransaction then the appropriate "receive
