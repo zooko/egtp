@@ -12,7 +12,7 @@
 # the sub modules that import things from this (debug, confutils,
 # mojoutil, idlib, etc..)
 #
-__cvsid = '$Id: mojostd.py,v 1.5 2002/03/11 17:35:17 zooko Exp $'
+__cvsid = '$Id: mojostd.py,v 1.6 2002/04/26 20:53:48 zooko Exp $'
 
 
 ### Imports:
@@ -273,7 +273,7 @@ class DebugStream:
         # superset of the standard file interface, so we can pass this around to third-party or standard modules
         # which use files!
         if type(v) != types.IntType:
-            self._internal_write('ERROR: the next debug message called write() with a non-integer v: %s\n', args=(v,), v=0)
+            self.write('ERROR: the next debug message called write() with a non-integer v: %s\n', args=(v,), v=0)
             v = 0
         if v:
             if v > int(confman.get("MAX_VERBOSITY", "1")):
