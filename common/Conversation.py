@@ -5,7 +5,7 @@
 #    GNU Lesser General Public License v2.1.
 #    See the file COPYING or visit http://www.gnu.org/ for details.
 #
-__cvsid = '$Id: Conversation.py,v 1.3 2002/02/11 14:47:57 zooko Exp $'
+__cvsid = '$Id: Conversation.py,v 1.4 2002/04/23 16:24:44 zooko Exp $'
 
 # standard modules
 import threading
@@ -20,10 +20,10 @@ import os
 import types
 from traceback import print_exc
 
-#pyutil modules
+# pyutil modules
 from debugprint import debugprint
 
-# our modules
+# EGTP/Mnet modules
 import Cache
 from CommHints import HINT_EXPECT_RESPONSE, HINT_EXPECT_MORE_TRANSACTIONS, HINT_EXPECT_NO_MORE_COMMS, HINT_EXPECT_TO_RESPOND, HINT_THIS_IS_A_RESPONSE, HINT_NO_HINT
 import CommStrat
