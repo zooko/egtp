@@ -6,7 +6,7 @@
 #    GNU Lesser General Public License v2.1.
 #    See the file COPYING or visit http://www.gnu.org/ for details.
 #
-__cvsid = '$Id: EGTPtest.py,v 1.6 2002/03/13 20:37:48 zooko Exp $'
+__cvsid = '$Id: EGTPtest.py,v 1.7 2002/03/13 21:24:31 zooko Exp $'
 
 # standard Python modules
 import threading, types
@@ -49,10 +49,12 @@ class LocalLookupMan(ILookupManager):
     def publish(self, egtpid, egtpaddr):
         """
         @precondition egtpid must be an id.: idlib.is_id(egtpid): "egtpid: %s :: %s" % (hr(egtpid), hr(type(egtpid)),)
-        @precondition egtpid must match egtpaddr.: idlib.equal(egtpid, CommStrat.addr_to_id(egtpaddr)): "egtpid: %s, egtpaddr: %s, addr_to_id(egtpaddr): %s" % (hr(egtpid), hr(egtpaddr), hr(CommStrat.addr_to_id(egtpaddr)),)
+        @precondition egtpaddr must be a dict.: type(egtpaddr) is types.DictType: "egtpaddr: %s :: %s" % (hr(egtpaddr), hr(type(egtpaddr)),)
+        @precondition egtpid must match egtpaddr.: idlib.equal(egtpid, CommStrat.addr_to_id(egtpaddr)): "egtpid: %s, egtpaddr: %s" % (hr(egtpid), hr(egtpaddr), hr(egtpaddr.get_id(),))
         """
         assert idlib.is_id(egtpid), "precondition: egtpid must be an id." + " -- " + "egtpid: %s :: %s" % (hr(egtpid), hr(type(egtpid)),)
-        assert idlib.equal(egtpid, CommStrat.addr_to_id(egtpaddr)), "precondition: egtpid must match egtpaddr." + " -- " + "egtpid: %s, egtpaddr: %s, addr_to_id(egtpaddr): %s" % (hr(egtpid), hr(egtpaddr), hr(CommStrat.addr_to_id(egtpaddr)),)
+        assert type(egtpaddr) is types.DictType, "precondition: egtpaddr must be a dict." + " -- " + "egtpaddr: %s :: %s" % (hr(egtpaddr), hr(type(egtpaddr)),)
+        assert idlib.equal(egtpid, CommStrat.addr_to_id(egtpaddr)), "precondition: egtpid must match egtpaddr." + " -- " + "egtpid: %s, egtpaddr: %s" % (hr(egtpid), hr(egtpaddr), hr(egtpaddr.get_id(),))
 
         self.data[egtpid] = egtpaddr
 
@@ -64,7 +66,7 @@ class LocalDiscoveryMan(IDiscoveryManager):
         discoveryhand.result(self.data.get(key))
         return # `discover()' never returns any return value!
 
-def _help_test(finishedflag, numsuccessesh, lm, dm):
+def _help_test(finishedflag, numsuccessesh, lm, dm, name="a test"):
     """
     @param lm an object that satisfies the ILookupMan interface
     @param dm an object that satisfies the IDiscoveryMan interface
@@ -75,8 +77,8 @@ def _help_test(finishedflag, numsuccessesh, lm, dm):
     n1 = Node.Node(allownonrouteableip=true, lookupman=lm, discoveryman=dm)
 
     # Set a handler func: if any messages come in with message type "ping", the EGTP Node will call this function.
-    def l_ping_handler(sender, msg, finishedflag=finishedflag, numsuccessesh=numsuccessesh, start=start):
-        debugprint("_help_test(): passed in %s seconds: Got a message from %s.  The message says: %s\n", args=("%0.1f" % (timer.time() - start), sender, msg,), v=0)
+    def l_ping_handler(sender, msg, finishedflag=finishedflag, numsuccessesh=numsuccessesh, start=start, name=name):
+        debugprint("%s(): passed in %s seconds: Got a message from %s.  The message says: %s\n", args=(name, "%0.1f" % (timer.time() - start), sender, msg,), v=0)
         numsuccessesh[0] += 1
         finishedflag.set()
 
@@ -86,7 +88,7 @@ def _help_test(finishedflag, numsuccessesh, lm, dm):
     n2 = Node.Node(allownonrouteableip=true, lookupman=lm, discoveryman=dm)
 
     # Have the second node ping the first, using only the first's id.
-    n2.send(n1.get_address().get_id(), mtype="ping", msg="hello there, you crazy listener!")
+    n2.send(CommStrat.addr_to_id(n1.get_address()), mtype="ping", msg="hello there, you crazy listener!")
 
 def test_0(finishedflag, numsuccessesh):
     """
@@ -118,14 +120,14 @@ def test_0(finishedflag, numsuccessesh):
     s = Node.Node(lookupman=localLM, discoveryman=localDM)
 
     # have the 2nd node ping the first
-    debugprint("test_0: about to send!\n", v=0)
+    # debugprint("test_0: about to send!\n", v=0)
     s.send(lsid, mtype="ping", msg="hello there, number one!")
-    debugprint("test_0: sent!\n", v=0)
+    # debugprint("test_0: sent!\n", v=0)
 
 def test_1(finishedflag, numsuccessesh):
     localLM = LocalLookupMan()
     localDM = LocalDiscoveryMan()
-    _help_test(finishedflag, numsuccessesh, localLM, localDM)
+    _help_test(finishedflag, numsuccessesh, localLM, localDM, name="test_1")
 
 def runalltests(tests, expectedfailures=0):
     if expectedfailures > 0:
@@ -155,5 +157,5 @@ def runalltests(tests, expectedfailures=0):
 
     assert numsuccessesh[0] == len(tests), "not all tests passed: num successes: %s, num failures: %s" % (numsuccessesh[0], map(lambda x: x[0], filter(lambda x: not x[1].isSet(), ts)),)
 
-runalltests((test_0, test_1,), expectedfailures=1)
+runalltests((test_0, test_1,), expectedfailures=0)
 

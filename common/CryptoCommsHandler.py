@@ -4,7 +4,7 @@
 #    GNU Lesser General Public License v2.1.
 #    See the file COPYING or visit http://www.gnu.org/ for details.
 #
-__cvsid = '$Id: CryptoCommsHandler.py,v 1.3 2002/02/11 14:47:57 zooko Exp $'
+__cvsid = '$Id: CryptoCommsHandler.py,v 1.4 2002/03/13 21:24:31 zooko Exp $'
 
 # standard modules
 import traceback
@@ -268,10 +268,12 @@ class CryptoCommsHandler:
 
         @precondition This thread must be the DoQ thread.: DoQ.doq.is_currently_doq()
         @precondition `counterparty_id' must be a binary id.: idlib.is_binary_id(counterparty_id): "counterparty_id: %s" % humanreadable.hr(counterparty_id)
+        @precondition `commstrat' must be a CommStrat.: isinstance(commstrat, CommStrat.CommStrat): "commstrat: %s :: %s" % (humanreadable.hr(commstrat), humanreadable.hr(type(commstrat)),)
         @precondition `counterparty_id' must match the commstrat public key.: idlib.equals(idlib.make_id(commstrat._pubkey, 'broker'), counterparty_id): "counterparty_id: %s, commstrat: %s" % (humanreadable.hr(counterparty_id), humanreadable.hr(commstrat),)
         """
         assert DoQ.doq.is_currently_doq(), "precondition: This thread must be the DoQ thread."
         assert idlib.is_binary_id(counterparty_id), "precondition: `counterparty_id' must be a binary id." + " -- " + "counterparty_id: %s" % humanreadable.hr(counterparty_id)
+        assert isinstance(commstrat, CommStrat.CommStrat), "precondition: `commstrat' must be a CommStrat." + " -- " + "commstrat: %s :: %s" % (humanreadable.hr(commstrat), humanreadable.hr(type(commstrat)),)
         assert idlib.equals(idlib.make_id(commstrat._pubkey, 'broker'), counterparty_id), "precondition: `counterparty_id' must match the commstrat public key." + " -- " + "counterparty_id: %s, commstrat: %s" % (humanreadable.hr(counterparty_id), humanreadable.hr(commstrat),)
 
         # If we already have a CommStrat.Crypto object then we'll continue to use it (it might

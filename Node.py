@@ -6,7 +6,7 @@
 #    GNU Lesser General Public License v2.1.
 #    See the file COPYING or visit http://www.gnu.org/ for details.
 #
-__cvsid = '$Id: Node.py,v 1.2 2002/03/11 17:35:16 zooko Exp $'
+__cvsid = '$Id: Node.py,v 1.3 2002/03/13 21:24:31 zooko Exp $'
 
 
 # standard modules
@@ -41,7 +41,7 @@ class Node:
         """
         @return the current EGTP address used to contact this Node or `None' if it isn't currently known
         """
-        return self.mtm.get_comm_strategy()
+        return self.mtm._get_our_hello_msgbody()
 
     def set_handler_func(self, mtype, handler_func):
         """

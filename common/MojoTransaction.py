@@ -5,7 +5,7 @@
 #    GNU Lesser General Public License v2.1.
 #    See the file COPYING or visit http://www.gnu.org/ for details.
 #
-__cvsid = '$Id: MojoTransaction.py,v 1.7 2002/03/13 20:37:48 zooko Exp $'
+__cvsid = '$Id: MojoTransaction.py,v 1.8 2002/03/13 21:24:31 zooko Exp $'
 
 
 # standard modules
@@ -83,7 +83,12 @@ class LookupHand(ILookupHandler):
         self._timeout = timeout
 
     def result(self, value):
-        self._ch.use_comm_strategy(self._counterparty_id, value)
+        """
+        @precondition `value' must be a dict.: type(value) is types.DictType: "value: %s :: %s" % (hr(value), hr(type(value)),)
+        """
+        assert type(value) is types.DictType, "precondition: `value' must be a dict." + " -- " + "value: %s :: %s" % (hr(value), hr(type(value)),)
+
+        self._ch.use_comm_strategy(self._counterparty_id, CommStrat.dict_to_strategy(value["connection strategies"][0], mtm=self._ch._tcpch._mtm))
         self._ch.send_msg(self._counterparty_id, self._msg, hint=self._hint, fast_fail_handler=self._fast_fail_handler, timeout=self._timeout)
 
     def fail(self):
@@ -430,11 +435,11 @@ class MojoTransactionManager:
             self.__handler_funcs_and_services_dicts_update_lock.release()
 
     def send_hello_to_meta_trackers(self):
-        debugprint("xxxxxxx %s.send_hello_to_meta_trackers()\n", args=(self,))
+        # debugprint("xxxxxxx %s.send_hello_to_meta_trackers()\n", args=(self,))
         self.__announce_self_to_id_trackers()
 
     def _hello_sequence_num_needs_increasing(self):
-        debugprint("xxxxxxx %s._hello_sequence_num_needs_increasing()\n", args=(self,))
+        # debugprint("xxxxxxx %s._hello_sequence_num_needs_increasing()\n", args=(self,))
         if not self.__need_sequence_update:
             self.__need_sequence_update = true
 
@@ -443,11 +448,11 @@ class MojoTransactionManager:
         @returns a contact info dict which can have no comm strategies if there is no strategy yet (which can happen in practice because you haven't found a relayer to announce yet)
         """
         (cs, newflag,) = self._listenermanager.get_comm_strategy_and_newflag()
-        debugprint("xxxxxxx %s._get_our_hello_msgbody(); cs: %s, newflag: %s\n", args=(self, cs, newflag,))
+        # debugprint("xxxxxxx %s._get_our_hello_msgbody(); cs: %s, newflag: %s\n", args=(self, cs, newflag,))
 
         if newflag:
             self._hello_sequence_num_needs_increasing()
-            debugprint("our current commstrat: %s\n", args=(cs,), v=0, vs="commstrats")
+            # debugprint("our current commstrat: %s\n", args=(cs,), v=0, vs="commstrats")
 
         hello_body={}
         if cs:
