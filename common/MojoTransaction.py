@@ -5,7 +5,7 @@
 #    GNU Lesser General Public License v2.1.
 #    See the file COPYING or visit http://www.gnu.org/ for details.
 #
-__cvsid = '$Id: MojoTransaction.py,v 1.4 2002/02/11 14:47:57 zooko Exp $'
+__cvsid = '$Id: MojoTransaction.py,v 1.5 2002/03/11 21:54:53 zooko Exp $'
 
 
 # standard modules
@@ -88,10 +88,8 @@ class LookupHand(ILookupHandler):
 
     def fail(self):
         # Hrm?  Not sure what to do here....  --Zooko 2002-01-27
-        debugprint("%s.fail(%s)\n", args=(self, key,))
-
+        debugprint("%s.fail()\n", args=(self,))
         pass
-
 
 """
 When any message arrives that initiates a new mojotransaction then the appropriate "receive
