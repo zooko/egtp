@@ -6,7 +6,7 @@
 #    GNU Lesser General Public License v2.1.
 #    See the file COPYING or visit http://www.gnu.org/ for details.
 #
-__cvsid="$Id: Mstart,v 1.5 2002/06/24 21:33:29 zooko Exp $"
+__cvsid="$Id: Mstart,v 1.6 2002/07/16 20:50:37 zooko Exp $"
 
 
 # XXX README README README
@@ -61,7 +61,7 @@ function findpython {
                                 $PYTHON -c 'import sys; assert len(sys.version) > 0; sys.exit(77)' 2>/dev/null
 
                                 if [ ! "X${?}" = "X77" ]; then
-                                    echo "PYTHON environment variable: ${PYTHON}, doesn't specify a working python interpreter, and I tried just invoking \`python2.2', \`python2.1', \`python', \`python2', \`python2.0', \`python1.5', and \`python1' and none of those worked either.  Giving up."
+                                    echo "PYTHON environment variable: ${PYTHON}, doesn't specify a working python interpreter, and I tried just invoking \`python2.2', \`python2.1', \`python', \`python2', \`python2.0', \`python1.5', and \`python1' and none of those worked either.  Giving up." >&2
                                     exit 1 # signal failure
                                 fi
                             fi
@@ -122,10 +122,10 @@ function findEGTPdir {
         return 0
     fi
 
-    echo "using EGTPDIR == ${FIRSTTRY} didn't work..."
-    echo "using EGTPDIR == ${EGTPDIR} didn't work..."
+    echo "using EGTPDIR == ${FIRSTTRY} didn't work..." >&2
+    echo "using EGTPDIR == ${EGTPDIR} didn't work..." >&2
 
-    echo "Cannot find EGTPDIR, giving up."
+    echo "Cannot find EGTPDIR, giving up." >&2
     exit 1
 }
 
@@ -148,12 +148,12 @@ function findEGTPdir {
 
 function EGTPenvset {
     if [ "X${PYTHON}" = "X" ]; then
-        echo "error -- someone forgot to set PYTHON before trying to use EGTPenvset"
+        echo "error -- someone forgot to set PYTHON before trying to use EGTPenvset" >&2
         exit 1
     fi
    
     if [ "X${EGTPDIR}" = "X" ]; then
-        echo "error -- someone forgot to set EGTPDIR before trying to use EGTPenvset"
+        echo "error -- someone forgot to set EGTPDIR before trying to use EGTPenvset" >&2
         exit 1
     fi
    

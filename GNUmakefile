@@ -13,7 +13,7 @@
 # example:
 #   coolmachine:~/egtp% make EGTPDIR=${HOME}/egtp EXTSRCDIR=${HOME}/extsrc
 #
-# $Id: GNUmakefile,v 1.6 2002/06/24 21:33:29 zooko Exp $
+# $Id: GNUmakefile,v 1.7 2002/07/16 20:50:37 zooko Exp $
 
 # For the sourcetar target to place distribution files:
 DISTDIR=/var/tmp
@@ -50,7 +50,18 @@ BINTARBALLNAME=$(BINUNCTARBALLNAME).gz
 
 # The command to use to run the python interpreter (used for running
 # setup.py to build external modules).
-PYTHON=$(shell ${EGTPDIR}/Mstart 'echo $${PYTHON}')
+PYTHON=$(shell ${EGTPDIR}/Mstart 'echo $${PYTHON}' 2>/dev/null)
+ifeq ($(strip $(PYTHON)),)
+$(error "Didn't find a working Python interpreter.")
+else
+ifneq ($(shell if [ -f $(PYTHON) ]; then echo YEP; fi), YEP)
+$(error "Didn't find a Python interpreter.")
+else
+ifneq ($(strip $(shell $(PYTHON) -c 'print "hello"' 2>/dev/null)), hello)
+$(error "Didn't find a working Python interpreter.")
+endif
+endif
+endif
 
 help:
 	@echo ''
