@@ -423,12 +423,12 @@ def crypto_dict_to_id(dict):
 
 def addr_to_id(addr):
     """
-    @precondition `addr' must be a dict or a CommStrat instance with a broker_id.: (type(addr) is types.DictType) or ((type(addr) is types.InstanceType) and (isinstance(addr, CommStrat)) and (addr._broker_id is not None)): "addr: %s :: %s" % (hr(addr), hr(type(addr)),)
+    @precondition `addr' must be a dict with a ["connection strategies"][0]["pubkey"] key chain, or else a CommStrat instance with a broker_id.: ((type(addr) is types.DictType) and (addr.has_key("connection strategies")) and (addr.get("connection strategies", [{}])[0].has_key("pubkey"))) or ((type(addr) is types.InstanceType) and (isinstance(addr, CommStrat)) and (addr._broker_id is not None)): "addr: %s :: %s" % (hr(addr), hr(type(addr)),)
     """
-    assert (type(addr) is types.DictType) or ((type(addr) is types.InstanceType) and (isinstance(addr, CommStrat)) and (addr._broker_id is not None)), "precondition: `addr' must be a dict or a CommStrat instance with a broker_id." + " -- " + "addr: %s :: %s" % (hr(addr), hr(type(addr)),)
+    assert ((type(addr) is types.DictType) and (addr.has_key("connection strategies")) and (addr.get("connection strategies", [{}])[0].has_key("pubkey"))) or ((type(addr) is types.InstanceType) and (isinstance(addr, CommStrat)) and (addr._broker_id is not None)), "precondition: `addr' must be a dict with a [\"connection strategies\"][0][\"pubkey\"] key chain, or else a CommStrat instance with a broker_id." + " -- " + "addr: %s :: %s" % (hr(addr), hr(type(addr)),)
 
     if type(addr) is types.DictType:
-        return idlib.make_id(mencode.mencode(dict['pubkey']), 'broker')
+        return idlib.make_id(mencode.mencode(addr["connection strategies"][0]['pubkey']), 'broker')
     else:
         return addr.get_id()
 

@@ -5,7 +5,7 @@
 #    GNU Lesser General Public License v2.1.
 #    See the file COPYING or visit http://www.gnu.org/ for details.
 #
-__cvsid = '$Id: MojoTransaction.py,v 1.6 2002/03/13 17:58:28 zooko Exp $'
+__cvsid = '$Id: MojoTransaction.py,v 1.7 2002/03/13 20:37:48 zooko Exp $'
 
 
 # standard modules
@@ -529,7 +529,7 @@ class MojoTransactionManager:
             # Hm.  We haven't figured out how people can talk to us yet.  Might as well not bother announcing then.
             return
 
-        self._lookupman.publish({'type': "EGTP address", 'key': self.get_id()}, hello_body)
+        self._lookupman.publish(self.get_id(), hello_body)
 
     def send_goodbye_to_metatrackers(self):
         """Send sign off message to meta/id trackers we most recently said hello to; this does not wait for the send to succeed!"""
@@ -1003,6 +1003,6 @@ class MojoTransactionManager:
 
         # _debugprint(diagstr="looking up contact info...", v=15, vs="metatracking")
         lookuphand = LookupHand(counterparty_id, msg, self._ch, hint=hint, fast_fail_handler=fast_fail_handler, timeout=timeout)
-        self._lookupman.lookup({'type': "EGTP address", 'key': counterparty_id}, lookuphand)
+        self._lookupman.lookup(counterparty_id, lookuphand)
         # _debugprint(diagstr="done calling nonblocking_get_contact_info...", v=15, vs="metatracking")
 

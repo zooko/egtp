@@ -6,10 +6,10 @@
 #    GNU Lesser General Public License v2.1.
 #    See the file COPYING or visit http://www.gnu.org/ for details.
 #
-__cvsid = '$Id: EGTPtest.py,v 1.5 2002/03/13 17:43:32 zooko Exp $'
+__cvsid = '$Id: EGTPtest.py,v 1.6 2002/03/13 20:37:48 zooko Exp $'
 
 # standard Python modules
-import threading
+import threading, types
 
 # pyutil modules
 import DoQ
@@ -25,7 +25,6 @@ from timeutil import timer
 from confutils import confman
 import idlib
 from interfaces import *
-import mencode
 
 # EGTP modules
 import CommStrat
@@ -42,23 +41,27 @@ class LocalLookupMan(ILookupManager):
     def __init__(self):
         self.data = {}
     def lookup(self, key, lookuphand):
-        serialized = mencode.mencode(key)
-        if self.data.has_key(serialized):
-            lookuphand.result(self.data.get(serialized))
+        if self.data.has_key(key):
+            lookuphand.result(self.data.get(key))
         else:
             lookuphand.fail()
         return # `lookup()' never returns any return value!
-    def register_address(self, egtpid, egtpaddr):
-        assert idlib.equal(egtpid, CommStrat.addr_to_id(egtpaddr))
-        self.data[mencode.mencode({'type': "EGTP address", 'key': egtpid})] = egtpaddr
+    def publish(self, egtpid, egtpaddr):
+        """
+        @precondition egtpid must be an id.: idlib.is_id(egtpid): "egtpid: %s :: %s" % (hr(egtpid), hr(type(egtpid)),)
+        @precondition egtpid must match egtpaddr.: idlib.equal(egtpid, CommStrat.addr_to_id(egtpaddr)): "egtpid: %s, egtpaddr: %s, addr_to_id(egtpaddr): %s" % (hr(egtpid), hr(egtpaddr), hr(CommStrat.addr_to_id(egtpaddr)),)
+        """
+        assert idlib.is_id(egtpid), "precondition: egtpid must be an id." + " -- " + "egtpid: %s :: %s" % (hr(egtpid), hr(type(egtpid)),)
+        assert idlib.equal(egtpid, CommStrat.addr_to_id(egtpaddr)), "precondition: egtpid must match egtpaddr." + " -- " + "egtpid: %s, egtpaddr: %s, addr_to_id(egtpaddr): %s" % (hr(egtpid), hr(egtpaddr), hr(CommStrat.addr_to_id(egtpaddr)),)
+
+        self.data[egtpid] = egtpaddr
 
 # a discovery man which uses only local data;  In a real app you need distributed discovery in the form of MetaTrackers, Tristero, Plex, Alpine, or something.
 class LocalDiscoveryMan(IDiscoveryManager):
     def __init__(self):
         self.data = {}
     def discover(self, key, discoveryhand):
-        serialized = mencode.mencode(key)
-        discoveryhand.result(self.data.get(serialized))
+        discoveryhand.result(self.data.get(key))
         return # `discover()' never returns any return value!
 
 def _help_test(finishedflag, numsuccessesh, lm, dm):
@@ -101,7 +104,7 @@ def test_0(finishedflag, numsuccessesh):
     lsaddr = l.get_address()
 
     lsid = CommStrat.addr_to_id(lsaddr)
-    localLM.register_address(lsid, lsaddr)
+    localLM.publish(lsid, lsaddr)
 
     # set a handler func: if any messages come in with message type "ping", the EGTP Node will call this function.
     def l_ping_handler(sender, msg, finishedflag=finishedflag, numsuccessesh=numsuccessesh, start=start):
