@@ -13,7 +13,7 @@
 # example:
 #   coolmachine:~/egtp% make EVILDIR=${HOME}/egtp EXTSRCDIR=${HOME}/extsrc
 #
-# $Id: GNUmakefile,v 1.4 2002/03/28 18:51:51 zooko Exp $
+# $Id: GNUmakefile,v 1.5 2002/04/11 13:57:39 zooko Exp $
 
 # For the sourcetar target to place distribution files:
 DISTDIR=/var/tmp
@@ -420,7 +420,7 @@ co_pyutil:
 		echo ":pserver:anonymous@cvs.pyutil.sourceforge.net:/cvsroot/pyutil A" >>${HOME}/.cvspass ; \
 	fi && \
 	if [ -d pyutil ]; then \
-		(cd pyutil && cvs -z3 -d:pserver:anonymous@cvs.pyutil.sourceforge.net:/cvsroot/pyutil up -Pd ; $(MAKE) ) ; \
+		(cd pyutil && cvs -z3 -d:pserver:anonymous@cvs.pyutil.sourceforge.net:/cvsroot/pyutil up -Pd ) ; \
 	else \
 		cvs -z3 -d:pserver:anonymous@cvs.pyutil.sourceforge.net:/cvsroot/pyutil co -P pyutil ; \
 	fi
