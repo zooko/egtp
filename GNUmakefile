@@ -13,7 +13,7 @@
 # example:
 #   coolmachine:~/egtp% make EVILDIR=${HOME}/egtp EXTSRCDIR=${HOME}/extsrc
 #
-# $Id: GNUmakefile,v 1.2 2002/03/11 17:35:16 zooko Exp $
+# $Id: GNUmakefile,v 1.3 2002/03/11 18:57:56 zooko Exp $
 
 # For the sourcetar target to place distribution files:
 DISTDIR=/var/tmp
@@ -68,8 +68,8 @@ help:
 	@echo 'like this:'
 	@echo 'gmake all MAKE=gmake'
 
-
-all: mencode_module pybsddb_module crypto_modules co_pyutil
+# We do clean_bytecode here because it is too often a problem that there are old .pyc's lying around after the .py has been removed.  It takes very little time when it automatically recompiles the bytecode next time you run.
+all: mencode_module pybsddb_module crypto_modules co_pyutil clean_bytecode
 	@echo ''
 	@echo 'All done.'
 	@echo ''
