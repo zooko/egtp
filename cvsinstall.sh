@@ -40,6 +40,13 @@ cvs -z3 -d:pserver:anonymous@cvs.egtp.sourceforge.net:/cvsroot/egtp co egtp exts
 # "cvs update -Pd" in each one.
 
 # Set these two environment variables to be the absolute path to the respective directories:
+# Work around a Solaris bug
+if [ "`uname -s`" = "SunOs" ]; then
+  PWD=`pwd`
+  echo "Warning: you will need GNU tar in your PATH to compile Mnet."
+  echo "You may also need to put /usr/local/lib into LD_LIBRARY_PATH"
+fi
+
 EGTPDIR=${PWD}/egtp; export EGTPDIR
 EXTSRCDIR=${PWD}/extsrc; export EXTSRCDIR
 cd egtp

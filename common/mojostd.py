@@ -12,7 +12,7 @@
 # the sub modules that import things from this (debug, confutils,
 # mojoutil, idlib, etc..)
 #
-__cvsid = '$Id: mojostd.py,v 1.9 2002/07/17 01:58:54 zooko Exp $'
+__cvsid = '$Id: mojostd.py,v 1.10 2002/07/18 04:37:37 zooko Exp $'
 
 
 # Python standard library modules
@@ -120,7 +120,7 @@ if os.environ.has_key('HOME'):
     HOME_DIR = '${HOME}'
 else:
     # The environment variable wasn't set, so use this hardcoded constant:
-    if sys.platform in ("linux", "bsd"):
+    if sys.platform in ("linux", "bsd", "irix", "sunos",):
         HOME_DIR = os.path.normpath("/var/tmp/egtp")
     else:
         HOME_DIR = os.path.normpath(r"\My Documents")
@@ -962,6 +962,7 @@ platform_map = {
     "openbsd2": "bsd",
     "freebsd4": "bsd",
     "netbsd1": "bsd",
+    "sunos5": "sunos",
     }
 
 # Platform information:

@@ -6,7 +6,7 @@
 #
 # A library for determining the IP addresses of the local machine.
 #
-__cvsid = '$Id: ipaddresslib.py,v 1.3 2002/06/25 03:54:57 zooko Exp $'
+__cvsid = '$Id: ipaddresslib.py,v 1.4 2002/07/18 04:37:37 zooko Exp $'
 
 # standard modules
 import sys
@@ -43,6 +43,9 @@ __netbsd_netstat_path = '/usr/bin/netstat'
 __darwin_ifconfig_path = '/sbin/ifconfig -a'
 __darwin_netstat_path = '/usr/sbin/netstat'
 
+# Solaris 2.x
+__sunos_ifconfig_path = '/usr/sbin/ifconfig -a'
+__sunos_netstat_path = '/usr/bin/netstat'
 
 # Irix 6.5
 __irix_ifconfig_path = '/usr/etc/ifconfig -a'
@@ -147,6 +150,15 @@ def get_primary_ip_address(nonroutableok) :
             address = '127.0.0.1'
         else :
             address = ifacedict[default_iface]
+    elif confutils.platform == 'sunos':
+        ifacedict = read_sunos_ifconfig()
+        default_iface = get_sunos_default_iface()
+
+        if not default_iface or not ifacedict.has_key(default_iface):
+            debugprint("ERROR ipaddresslib couldn't determine your IP address, assuming 127.0.0.1 for testing\n", vs='ipaddresslib')
+            address = '127.0.0.1'
+        else:
+            address = ifacedict[default_iface]
     else :
         debugprint('ERROR ipaddresslib unsupported os: '+sys.platform)
         if not forced_address :
@@ -168,7 +180,7 @@ def is_routable(address):
 
 ########################################################################
 
-def read_linux_ifconfig() :
+def read_linux_ifconfig():
     """Returns a dict mapping interface names to IP addresses"""
     # this is one function that may have been simpler in Perl...
     ifconfig_output = os.popen(__linux_ifconfig_path).read()
@@ -176,27 +188,27 @@ def read_linux_ifconfig() :
     iface_re = re.compile('^(?P<name>\w+)\s.+\sinet addr:(?P<address>\d+\.\d+\.\d+\.\d+)\s.+$', flags=re.M|re.I|re.S)
 
     resultdict = {}
-    for output in ifconfig_output_ifaces :
+    for output in ifconfig_output_ifaces:
         m = iface_re.match(output)
-        if m :
+        if m:
             d = m.groupdict()
             resultdict[d['name']] = d['address']
     
     return resultdict
 
-def get_linux_default_iface() :
+def get_linux_default_iface():
     """Returns the interface name the default route uses on this machine"""
     route_output = os.popen(__linux_route_path + ' -n').read()
     def_route_re = re.compile('^0\.0\.0\.0\s.*\s(?P<name>\w+)$', flags=re.M|re.I)
     m = def_route_re.search(route_output)
-    if m :
+    if m:
         return m.group('name')
-    else :
+    else:
         return None
 
 ########################################################################
 
-def read_netbsd_ifconfig(ifconfig_path=__netbsd_ifconfig_path) :
+def read_netbsd_ifconfig(ifconfig_path=__netbsd_ifconfig_path):
     """Returns a dict mapping interface names to IP addresses"""
     # this is one function that may have been simpler in Perl...
     ifconfig_output = os.popen(ifconfig_path).read()
@@ -205,7 +217,7 @@ def read_netbsd_ifconfig(ifconfig_path=__netbsd_ifconfig_path) :
     addr_re = re.compile('^\s+inet (?P<address>\d+\.\d+\.\d+\.\d+)\s.+$', flags=re.M|re.I|re.S)
 
     resultdict = {}
-    for output in ifconfig_output_ifaces :
+    for output in ifconfig_output_ifaces:
         m = name_re.match(output)
         if m:
             name = m.groupdict()['name']
@@ -216,20 +228,53 @@ def read_netbsd_ifconfig(ifconfig_path=__netbsd_ifconfig_path) :
     
     return resultdict
 
-def get_netbsd_default_iface(netstat_path=__netbsd_netstat_path) :
+def get_netbsd_default_iface(netstat_path=__netbsd_netstat_path):
     """Returns the interface name the default route uses on this machine"""
     route_output = os.popen(netstat_path + ' -rn').read()
     def_route_re = re.compile('^default\s.*\s(?P<name>\w+)$', flags=re.M|re.I)
     m = def_route_re.search(route_output)
-    if m :
+    if m:
         return m.group('name')
-    else :
+    else:
         return None
+
+########################################################################
+def read_sunos_ifconfig(ifconfig_path=__sunos_ifconfig_path):
+    """Returns a dict mapping interface names to IP addresses"""
+    # this is one function that may have been simpler in Perl...
+    ifconfig_output = os.popen(ifconfig_path).read()
+    ifconfig_output_ifaces = string.split(ifconfig_output, '\n')
+    name_re = re.compile('^(?P<name>[\w:]+): flags=', flags=re.M|re.I|re.S)
+    addr_re = re.compile('^\s+inet (?P<address>\d+\.\d+\.\d+\.\d+)\s.+$', flags=re.M|re.I|re.S)
+
+    resultdict = {}
+    for output in ifconfig_output_ifaces:
+        m = name_re.match(output)
+        if m:
+            name = m.groupdict()['name']
+        m = addr_re.match(output)
+        if m:
+            d = m.groupdict()
+            resultdict[name] = d['address']
+
+    return resultdict
+
+def get_sunos_default_iface(netstat_path=__sunos_netstat_path):
+    """Returns the interface name the default route uses on this machine"""
+    route_output = os.popen(netstat_path + ' -rna').read()
+    routes_split = string.split(route_output, '\n')
+    def_route_re = re.compile('^0.0.0.0\s.*\s(?P<name>\w+)$', flags=re.M|re.I)
+    for output in routes_split:
+        m = def_route_re.search(output)
+        if m:
+            return m.group('name')
+        else:
+            return None
 
 ########################################################################
 # Irix thankfully uses the BSD ifconfig and netstat tools...
 
-def read_irix_ifconfig(ifconfig_path=__irix_ifconfig_path) :
+def read_irix_ifconfig(ifconfig_path=__irix_ifconfig_path):
     """Returns a dict mapping interface names to IP addresses"""
     ifconfig_output = os.popen(ifconfig_path).read()
     ifconfig_output_ifaces = string.split(ifconfig_output, '\n')
@@ -240,16 +285,16 @@ def read_irix_ifconfig(ifconfig_path=__irix_ifconfig_path) :
     for oidx in filter( lambda n: (n+2)%2, range(len(ifconfig_output_ifaces)) ):
         output, nextoutput = ifconfig_output_ifaces[oidx-1:oidx+1]
         m = name_re.match(output)
-        if m :
+        if m:
             name = m.groupdict()['name']
             m = addr_re.match(nextoutput)
-            if m :
+            if m:
                 d = m.groupdict()
                 resultdict[name] = d['address']
     
     return resultdict
 
-def get_irix_default_iface() :
+def get_irix_default_iface():
     return get_netbsd_default_iface(netstat_path=__irix_netstat_path)
 
 ########################################################################
@@ -264,7 +309,7 @@ def read_win32_default_ifaceaddr(warninglogged_boolean=[]):
             warninglogged_boolean.append(1)
         return _hostname_read_win32_default_ifaceaddr()
 
-def _hostname_read_win32_default_ifaceaddr() :
+def _hostname_read_win32_default_ifaceaddr():
     """return the IP address found by looking up our hostname"""
     try:
         myhostname = socket.gethostname()
@@ -274,7 +319,7 @@ def _hostname_read_win32_default_ifaceaddr() :
         return "127.0.0.1"  # unknown IP address, return localhost
     return myipaddress
 
-def _route_read_win32_default_ifaceaddr() :
+def _route_read_win32_default_ifaceaddr():
     """return the IP address of the interface used by the first default route"""
     # the win32pipe interface hopefully doesn't bluescreen norton antivirus
     try:
@@ -285,9 +330,9 @@ def _route_read_win32_default_ifaceaddr() :
     def_route_re = re.compile('^\s*0\.0\.0\.0\s.+\s(?P<address>\d+\.\d+\.\d+\.\d+)\s+(?P<metric>\d+)\s*$', flags=re.M|re.I|re.S)
 
     m = def_route_re.search(route_output)
-    if m :
+    if m:
         return m.group('address')
-    else :
+    else:
         return None
 
 
@@ -302,22 +347,22 @@ def test_ip_detector_host():
     addr = get_primary_ip_address(1)
     assert addr == '127.0.0.1', "using 127.0.0.1 as detector host should have probably returned 127.0.0.1 as the address instead of %s" % addr
 
-def test_read_linux_ifconfig() :
-    if confutils.platform == 'linux' :
+def test_read_linux_ifconfig():
+    if confutils.platform == 'linux':
         ifacedict = read_linux_ifconfig()
         assert ifacedict['lo'] == '127.0.0.1'
 
-def test_read_win32_default_ifaceaddr() :
-    if confutils.platform == 'win32' :
+def test_read_win32_default_ifaceaddr():
+    if confutils.platform == 'win32':
         assert read_win32_default_ifaceaddr()
 
-def test_read_irix_ifconfig() :
-    if confutils.platform == 'irix' :
+def test_read_irix_ifconfig():
+    if confutils.platform == 'irix':
         ifacedict = read_irix_ifconfig()
         assert ifacedict['lo0'] == '127.0.0.1'
 
-def test_read_bsd_ifconfig() :
-    if confutils.platform == 'bsd' :
+def test_read_bsd_ifconfig():
+    if confutils.platform == 'bsd':
         ifacedict = read_netbsd_ifconfig()
         assert ifacedict['lo0'] == '127.0.0.1'
 

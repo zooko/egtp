@@ -13,7 +13,7 @@
 # example:
 #   coolmachine:~/egtp% make EGTPDIR=${HOME}/egtp EXTSRCDIR=${HOME}/extsrc
 #
-# $Id: GNUmakefile,v 1.7 2002/07/16 20:50:37 zooko Exp $
+# $Id: GNUmakefile,v 1.8 2002/07/18 04:37:37 zooko Exp $
 
 # For the sourcetar target to place distribution files:
 DISTDIR=/var/tmp
@@ -48,14 +48,31 @@ endif
 BINUNCTARBALLNAME=$(shell echo $(PKGNAME)-$(VERSTR)-`uname`-`uname -m`.tar)
 BINTARBALLNAME=$(BINUNCTARBALLNAME).gz
 
+# Check MNETDIR and EXTSRCDIR first
+ifeq ($(strip ${MNETDIR}),)
+$(error "MNETDIR environment variable is not set")
+else
+ifneq ($(shell if [ -d ${MNETDIR} ]; then echo YEP; fi), YEP)
+$(error "Didn't find MNETDIR=${MNETDIR}")
+endif
+endif
+
+ifeq ($(strip ${EXTSRCDIR}),)
+$(error "EXTSRCDIR environment variable is not set")
+else
+ifneq ($(shell if [ -d ${EXTSRCDIR} ]; then echo YEP; fi), YEP)
+$(error "Didn't find EXTSRCDIR=${EXTSRCDIR}")
+endif
+endif
+
 # The command to use to run the python interpreter (used for running
 # setup.py to build external modules).
 PYTHON=$(shell ${EGTPDIR}/Mstart 'echo $${PYTHON}' 2>/dev/null)
 ifeq ($(strip $(PYTHON)),)
-$(error "Didn't find a working Python interpreter.")
+$(error "Didn't find a Python interpreter.")
 else
 ifneq ($(shell if [ -f $(PYTHON) ]; then echo YEP; fi), YEP)
-$(error "Didn't find a Python interpreter.")
+$(error "Didn't find a Python interpreter.  PYTHON=$(PYTHON)")
 else
 ifneq ($(strip $(shell $(PYTHON) -c 'print "hello"' 2>/dev/null)), hello)
 $(error "Didn't find a working Python interpreter.")
@@ -101,8 +118,8 @@ distclean: clean inst_berkeleydb_clean inst_cryptopp_clean setup_dirs_clean
 
 clean_bytecode:
 	@cd $(EGTPDIR)
-	@find . -name "*.pyc" -print0 | xargs -0 rm -f
-	@find . -name "*.pyo" -print0 | xargs -0 rm -f
+	@find . -name "*.pyc" -print | xargs rm -f
+	@find . -name "*.pyo" -print | xargs rm -f
 
 bytecompile:
 	cd $(EGTPDIR)
@@ -389,18 +406,19 @@ crypto_modules: check_vars cryptopp
 	@cd ${EGTPDIR}/common/crypto/Python && \
 	CRYPTOPP_DIR=${EXTSRCDIR}/cryptopp && export CRYPTOPP_DIR && \
 	if [ "X${USE_CRYPTOPP_32}" != "X" ]; then \
-		export CRYPTOPP_VERSION="3.2" ; \
+		CRYPTOPP_VERSION="3.2" ; \
 	else \
 		if [ "X${USE_CRYPTOPP_40}" != "X" ]; then \
-			export CRYPTOPP_VERSION="4.0" ; \
+			CRYPTOPP_VERSION="4.0" ; \
 		else \
 			if [ "X${USE_CRYPTOPP_41}" != "X" ]; then \
-				export CRYPTOPP_VERSION="4.1" ; \
+				CRYPTOPP_VERSION="4.1" ; \
 			else \
-				export CRYPTOPP_VERSION="4.2" ; \
+				CRYPTOPP_VERSION="4.2" ; \
 			fi \
 		fi \
 	fi && \
+	export CRYPTOPP_VERSION && \
 	$(PYTHON) setup.py --libraries="$(DISTUTILS_LIBRARIES)" --library_dirs="$(DISTUTILS_LIBRARY_DIRS)" --include_dirs="$(DISTUTILS_INCLUDE_DIRS)" --extra_compile_args="$(DISTUTILS_EXTRA_COMPILE_ARGS)" --extra_link_args="$(DISTUTILS_EXTRA_LINK_ARGS)" build_ext --inplace
 	@echo ======== add ${EGTPDIR}/common/crypto/Python to your PYTHONPATH ========
 
@@ -408,18 +426,19 @@ crypto_modules_clean:
 	-cd ${EGTPDIR}/common/crypto/Python && \
 	CRYPTOPP_DIR=${EXTSRCDIR}/cryptopp && export CRYPTOPP_DIR && \
 	if [ "X${USE_CRYPTOPP_32}" != "X" ]; then \
-		export CRYPTOPP_VERSION="3.2" ; \
+		CRYPTOPP_VERSION="3.2" ; \
 	else \
 		if [ "X${USE_CRYPTOPP_40}" != "X" ]; then \
-			export CRYPTOPP_VERSION="4.0" ; \
+			CRYPTOPP_VERSION="4.0" ; \
 		else \
 			if [ "X${USE_CRYPTOPP_41}" != "X" ]; then \
-				export CRYPTOPP_VERSION="4.1" ; \
+				CRYPTOPP_VERSION="4.1" ; \
 			else \
-				export CRYPTOPP_VERSION="4.2" ; \
+				CRYPTOPP_VERSION="4.2" ; \
 			fi \
 		fi \
 	fi && \
+	export CRYPTOPP_VERSION && \
 	$(PYTHON) setup.py clean && \
 	rm -rf build && \
 	if [ -f evilcryptopp.so ]; then rm -f evilcryptopp.so ; fi
