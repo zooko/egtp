@@ -6,7 +6,7 @@
 #    GNU Lesser General Public License v2.1.
 #    See the file COPYING or visit http://www.gnu.org/ for details.
 #
-__cvsid = '$Id: Node.py,v 1.4 2002/03/21 23:48:30 zooko Exp $'
+__cvsid = '$Id: Node.py,v 1.5 2002/07/16 21:07:22 zooko Exp $'
 
 
 # standard modules
@@ -15,6 +15,10 @@ import types
 # pyutil modules
 import DoQ
 from humanreadable import hr
+
+# EGTP modules
+# import MetaTrackerLookupMan
+# import MetaTrackerDiscoveryMan
 
 # Mojo Nation modules
 import CommStrat
@@ -39,10 +43,16 @@ def shutdown_and_block_until_finished():
     DoQ.doq = None
 
 class Node:
-    def __init__(self, lookupman, discoveryman, allownonrouteableip=false):
+    def __init__(self, lookupman=None, discoveryman=None, allownonrouteableip=false):
         """
+        @param lookupman a Lookup Manager, or `None' to use the default one (MetaTrackerLookupMan)
+        @param discoveryman a Discovery Manager, or `None' to use the default one (MetaTrackerDiscoveryMan)
         @param allownonrouteableip `true' if you want the Node to ignore the fact that its detected IP address is non-routeable and go ahead and report it as a valid address;  This is for testing, although it might also be useful some day for routing within a LAN.
         """
+        if lookupman is None:
+            # XXX incomplete
+            raise "sorry, incomplete"
+            # lookupman = MetaTrackerLookupMan.MetaTrackerLookupMan()
         self.mtm = MojoTransaction.MojoTransactionManager(lookupman=lookupman, discoveryman=discoveryman, allownonrouteableip=allownonrouteableip)
         self.mtm.start_listening()
 

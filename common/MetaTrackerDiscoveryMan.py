@@ -5,7 +5,7 @@
 #    GNU Lesser General Public License v2.1.
 #    See the file COPYING or visit http://www.gnu.org/ for details.
 #
-__cvsid = '$Id: MetaTrackerDiscoveryMan.py,v 1.2 2002/03/11 17:35:16 zooko Exp $'
+__cvsid = '$Id: MetaTrackerDiscoveryMan.py,v 1.3 2002/07/16 21:07:23 zooko Exp $'
 
 
 # standard modules
@@ -23,7 +23,7 @@ from interfaces import *
 
 
 class MetaTrackerDiscoveryMan(IDiscoveryMan):
-    def __init__(self, mtm):
+    def __init__(self):
         pass
 
     def init(self, mtm):

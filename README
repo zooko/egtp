@@ -9,8 +9,11 @@ http://cvs.sourceforge.net/cgi-bin/viewcvs.cgi/*checkout*/egtp/egtp/cvsinstall.s
 
 How to learn the API:
 
-1.  The example: Look at EGTPtest.py, in the function named `test_1()' to see basic operation of 
-creating nodes and sending and receiving messages.
+0.  Read the file named "Tutorial.txt" in the egtp/ directory.
+
+1.  The example: Look at EGTPunittest.py, in the function named 
+`_help_test_EGTP_send_and_receive()' to see basic operation of creating nodes 
+and sending and receiving messages.
 
 2.  The interface that provides messaging:  Look at the interface of class Node in Node.py.
 
@@ -28,4 +31,5 @@ lookup handlers, discovery managers, and discovery handlers in interfaces.py.
 3.c.
     You can see how EGTP defines and uses handler classes in MojoTransaction.py 
     (class LookupHand) and in RelayListener.py (class ShoppingResultsHand).
+
 
