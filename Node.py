@@ -6,7 +6,7 @@
 #    GNU Lesser General Public License v2.1.
 #    See the file COPYING or visit http://www.gnu.org/ for details.
 #
-__cvsid = '$Id: Node.py,v 1.3 2002/03/13 21:24:31 zooko Exp $'
+__cvsid = '$Id: Node.py,v 1.4 2002/03/21 23:48:30 zooko Exp $'
 
 
 # standard modules
@@ -25,9 +25,18 @@ import idlib
 true = 1
 false = 0
 
-# EGTP module init
+# EGTP module init and shutdown
 def init():
+    DoQ.doq = DoQ.DoQ()
     DoQ.doq.add_task(MojoMessage.init)
+
+def shutdown_and_block_until_finished():
+    """
+    Can take a long time.
+    """
+    DoQ.doq.add_task(MojoMessage.shutdown)
+    DoQ.doq.shutdown_and_block_until_finished()
+    DoQ.doq = None
 
 class Node:
     def __init__(self, lookupman, discoveryman, allownonrouteableip=false):

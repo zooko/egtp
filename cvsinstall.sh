@@ -47,7 +47,7 @@ make all
 # This 'make all' step takes a while if this is the first time you've compiled.
 
 # Now see if it passes all unit tests:
-./Mstart ./unittest.sh
+./unittest.sh
   
 
 ### EXTRA OPTIONS AND DETAILS

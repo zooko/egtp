@@ -1,3 +1,3 @@
 #!/bin/sh
 
-${PYTHON} EGTPtest.py
+./Mstart '${PYTHON} EGTPunittest.py'
