@@ -119,8 +119,11 @@ class TCPCommsHandler(asyncore.dispatcher, LazySaver.LazySaver):
 
     def stop_listening(self):
         # ignore an AttributeError in asyncore when this TCPCommsHandler is a dummy for outgoing only without a socket
+        so = self
         try:
-            self.close()
+            while hasattr(so, 'socket'):
+                so = getattr(so, 'socket')
+            so.close()
         except AttributeError:
             # whoops.  Well, nevermind.
             pass
