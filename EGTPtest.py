@@ -6,7 +6,7 @@
 #    GNU Lesser General Public License v2.1.
 #    See the file COPYING or visit http://www.gnu.org/ for details.
 #
-__cvsid = '$Id: EGTPtest.py,v 1.4 2002/03/11 21:54:53 zooko Exp $'
+__cvsid = '$Id: EGTPtest.py,v 1.5 2002/03/13 17:43:32 zooko Exp $'
 
 # standard Python modules
 import threading
@@ -124,7 +124,10 @@ def test_1(finishedflag, numsuccessesh):
     localDM = LocalDiscoveryMan()
     _help_test(finishedflag, numsuccessesh, localLM, localDM)
 
-def runalltests(tests):
+def runalltests(tests, expectedfailures=0):
+    if expectedfailures > 0:
+        print "WARNING: this module is currently failing some of the unit tests.  Number of expected failures: %s" % expectedfailures
+
     # Create the event queue for this process:
     DoQ.doq = DoQ.DoQ()
     # Call `init()'.
@@ -137,7 +140,7 @@ def runalltests(tests):
         ts.append((test, finishedflag,))
         DoQ.doq.add_task(test, args=(finishedflag, numsuccessesh,))
 
-    timeout = 30
+    timeout = 20
     for (test, finishedflag,) in ts:
         tstart = timer.time()
         while not finishedflag.isSet():
@@ -147,7 +150,7 @@ def runalltests(tests):
                 print "test %s didn't finish within %s seconds" % (test, timeout,)
                 break
 
-    assert numsuccessesh[0] == len(tests), "not all tests passed: numsuccessesh[0]: %s, failures: %s" % (numsuccessesh[0], map(lambda x: x[0], filter(lambda x: not x[1].isSet(), ts)),)
+    assert numsuccessesh[0] == len(tests), "not all tests passed: num successes: %s, num failures: %s" % (numsuccessesh[0], map(lambda x: x[0], filter(lambda x: not x[1].isSet(), ts)),)
 
-runalltests((test_0, test_1,))
+runalltests((test_0, test_1,), expectedfailures=1)
 
