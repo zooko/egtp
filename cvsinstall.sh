@@ -47,7 +47,7 @@ make all
 # This 'make all' step takes a while if this is the first time you've compiled.
 
 # Now see if it passes all unit tests:
-./Mstart ./EGTPtest.py
+./Mstart ./unittest
   
 
 ### EXTRA OPTIONS AND DETAILS
