@@ -1,0 +1,22 @@
+Suggestions for how to learn this API:
+
+1.  The example: Look at EGTPtest.py, in the function named `test_1()' to see basic operation of 
+creating nodes and sending and receiving messages.
+
+2.  The interface that provides messaging:  Look at the interface of class Node in Node.py.
+
+3.  The interfaces that provide lookup and discovery:  Look at the interfaces for lookup managers, 
+lookup handlers, discovery managers, and discovery handlers in interfaces.py.
+
+3.a.
+    You can see local, non-distributed, for testing only implementations of the manager classes in 
+    EGTPtest.py.
+
+3.b.
+    You can see how EGTP uses the manager classes in MojoTransaction.py (see how it uses the 
+    `self._lookupman' member) and RelayListener.py (see how it uses the `self._discoveryman' member).
+
+3.c.
+    You can see how EGTP defines and uses handler classes in MojoTransaction.py 
+    (class LookupHand) and in RelayListener.py (class ShoppingResultsHand).
+

@@ -1,0 +1,38 @@
+CC = gcc
+CXX = g++
+AR = ar
+RANLIB = ranlib
+
+CPPFLAGS =
+CFLAGS = -g -fPIC
+CXXFLAGS = -g -I$(CRYPTOPP_DIR) -IPython
+LDFLAGS = -shared -L$(CRYPTOPP_DIR) -lstdc++ -lcryptopp
+
+CPP_EXT=cpp
+STATIC_LIB_EXT=a
+DYNAMIC_LIB_EXT=so
+
+SRCS = $(wildcard *.$(CPP_EXT))
+OBJS = $(SRCS:.$(CPP_EXT)=.o)
+LIBS = $(wildcard *.$(STATIC_LIB_EXT)) $(wildcard *.$(DYNAMIC_LIB_EXT))
+
+TESTSRC = $(wildcard *est.$(CPP_EXT))
+LIBSRC = $(filter-out $(TESTSRC), $(SRCS))
+
+all: librandsource_methods.so randsource_methodstest
+
+clean: 
+	rm -f $(OBJS) $(LIBS) randsource_methodstest
+
+# .SUFFIXES: .cpp
+# 
+# .cpp.o:
+# 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $<
+# 
+
+librandsource_methods.so: randsource_methods.o
+	$(CXX) $<  -o $@ $(LDFLAGS) 
+
+randsource_methodstest: randsource_methodstest.o
+	$(CXX) $(CXXFLAGS) $< -o $@ -lrandsource_methods -lcryptopp
+

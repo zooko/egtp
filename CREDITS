@@ -1,0 +1,71 @@
+    This is at least a partial credits-file of people that have 
+contributed to the EGTP project.  It is formatted to allow easy
+grepping and beautification by scripts.  The fields are: name (N), email (E),
+web-address (W), PGP key ID and fingerprint (P), description (D), and
+snail-mail address (S).
+
+Thanks,
+
+Zooko
+----------
+
+N: The Evil Geniuses For A Better Tomorrow
+D: turned some crazy ideas into a crazy reality
+
+N: Lars the Talking Alien
+E: lars@mad-scientist.com
+D: came to us in dreams and made us become Enlightened Ones
+S: 644 Church St., Mountain View, 94041 CA, USA, 3 Sol, Milky Way, above the fireplace
+
+N: Brian Lenihan
+E: brianl@real.com
+D: ported to Python 2.0; fixed bug in TCP comms code
+
+N: Andreas Bogk
+E: andreas@andreas.org
+D: ported to Linux/PPC; added the `--interact' hack
+
+N: Hauke Johannknecht
+E: ash@ash.de
+D: fixed bugs in {indexing blobstore db, text-mode browser UI}
+P: 2048R/FBB52E01 C3 6A 47 37 88 7E 48 26  DA A2 53 5C CC E7 15 A8
+
+N: Andrew Archibald
+E: aarchiba@yahoo.com
+D: fixed and optimized crypto code, implemented transaction timing
+P: 1024D/6C2FBADA  626D 73CE 378C CB98 02E7  3E74 CD2B 1B86 6C2F BADA
+
+N: KaLTaN
+E: peter.soetens@advalvas.be
+D: fixed bugs in BlockWholesaler
+
+N: "Xbl69fAIptGJ2ENpm3IiZh608n8"
+D: various fixes, tweaks, improvements and optimizations
+
+N: Bill Bumgarner
+E: bbum@codefab.com
+D: added Python Interpreter interface for Mac OSX version
+
+N: tav
+E: tav@espians.com
+W: http://tav.espians.com
+D: fixed bugs in DTML
+
+N: Kyle Hasselbacher
+E: kyle@toehold.com
+W: http://www.toehold.com/~kyle/
+D: wrote escalating price algorithm in RequestHandler
+P: 1024D/2A94C484  2909 A7B5 0EB4 734C 2898  8D63 D74B 287E 2A94 C484
+
+N: coderman
+E: coderman@mindspring.com
+D: patches to build with Python 1.5.2 and help with porting C++ code
+
+N: Raph Levien
+D: optimized information dispersal algorithm
+
+N: Myers W. Carpenter
+E: myers@fil.org
+W: http://maski.org/wxBroker/
+D: wrote the wxBroker GUI 
+P: 1024D/6CC865C5 F8BC 977B 1AFF 20DB F5CF  E362 915D 00A6 6CC8 65C5
