@@ -6,7 +6,7 @@
 #    GNU Lesser General Public License v2.1.
 #    See the file COPYING or visit http://www.gnu.org/ for details.
 #
-__cvsid = '$Id: EGTPtest.py,v 1.9 2002/03/14 16:50:30 zooko Exp $'
+__cvsid = '$Id: EGTPtest.py,v 1.10 2002/03/21 22:22:54 zooko Exp $'
 
 # standard Python modules
 import threading, types
@@ -29,6 +29,7 @@ import idlib
 import CommStrat
 import Node
 import NodeLookupMan
+from TristeroLookup import TristeroLookup
 from interfaces import *
 
 true = 1
@@ -91,11 +92,6 @@ def _help_test(finishedflag, numsuccessesh, lm, dm, name="a test"):
     # Have the second node ping the first, using only the first's id.
     n2.send(CommStrat.addr_to_id(n1.get_address()), mtype="ping", msg="hello there, you crazy listener!")
 
-def test_1(finishedflag, numsuccessesh):
-    localLM = NodeLookupMan.NodeLookupMan(LocalLookupMan())
-    localDM = LocalDiscoveryMan()
-    _help_test(finishedflag, numsuccessesh, localLM, localDM, name="test_1")
-
 def runalltests(tests, expectedfailures=0):
     if expectedfailures > 0:
         print "WARNING: this module is currently failing some of the unit tests.  Number of expected failures: %s" % expectedfailures
@@ -112,7 +108,7 @@ def runalltests(tests, expectedfailures=0):
         ts.append((test, finishedflag,))
         DoQ.doq.add_task(test, args=(finishedflag, numsuccessesh,))
 
-    timeout = 30
+    timeout = 60
     for (test, finishedflag,) in ts:
         tstart = timer.time()
         while not finishedflag.isSet():
@@ -124,5 +120,16 @@ def runalltests(tests, expectedfailures=0):
 
     assert numsuccessesh[0] == len(tests), "not all tests passed: num successes: %s, num failures: %s" % (numsuccessesh[0], map(lambda x: x[0], filter(lambda x: not x[1].isSet(), ts)),)
 
-runalltests((test_1,), expectedfailures=0)
+def test_local(finishedflag, numsuccessesh):
+    localLM = NodeLookupMan.NodeLookupMan(LocalLookupMan())
+local   localDM = LocalDiscoveryMan()
+    _help_test(finishedflag, numsuccessesh, localLM, localDM, name="test_local")
+
+def test_tristero_lookup(finishedflag, numsuccessesh):
+    localLM = TristeroLookup("http://fnordovax.dyndns.org:10805")
+    print 'TristeroLookup Service:', localLM
+    localDM = LocalDiscoveryMan()
+    _help_test(finishedflag, numsuccessesh, localLM, localDM, name="test_tristero_lookup")
+
+runalltests((test_local, test_tristero_lookup,), expectedfailures=0)
 

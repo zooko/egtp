@@ -80,8 +80,8 @@ make all
 # If you are building a package for yourself to use, you can use any version of 
 # Python.  However, if you want to run the package on a different machine than 
 # it was built, be aware that egtp packages built with a version of Python < 2.1 
-# cannot run with a version of Python >= 2.1, nor can egtp built with a newer 
-# version of Python be run with an older version of Python.
+# cannot run with a version of Python >= 2.1, nor can egtp built with a 
+# version >= 2.2 be run with a version of Python < 2.2.
 # If you are building a package for yourself to use, you can use any compiler
 # that works.  However if you want to run the package on a different machine 
 # than you build the package, then you have to make sure that the package you 
