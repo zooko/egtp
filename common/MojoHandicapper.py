@@ -1,10 +1,15 @@
+#!/usr/bin/env python
+#
+#  Copyright (c) 2002 Bryce "Zooko" Wilcox-O'Hearn
 #  Copyright (c) 2001 Autonomous Zone Industries
 #  This file is licensed under the
 #    GNU Lesser General Public License v2.1.
 #    See the file COPYING or visit http://www.gnu.org/ for details.
 #
+__cvsid = '$Id: MojoHandicapper.py,v 1.3 2002/06/25 02:12:27 zooko Exp $'
 
-# standard modules
+
+# Python standard library modules
 import bisect
 import traceback
 import types
@@ -12,7 +17,7 @@ import types
 # pyutil modules
 import DoQ
 from debugprint import debugprint, debugstream
-from dictutil import setdefault
+from compat import setdefault
 import humanreadable
 
 # (old-)EGTP modules

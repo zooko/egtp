@@ -13,10 +13,10 @@
 # us, their reputation for coming through with their deals in our eyes,
 # etc.
 #
-__cvsid = '$Id: counterparties.py,v 1.3 2002/02/11 14:47:57 zooko Exp $'
+__cvsid = '$Id: counterparties.py,v 1.4 2002/06/25 02:12:27 zooko Exp $'
 
 
-# standard modules
+# Python standard library modules
 from cPickle import dumps, loads, UnpicklingError
 import os
 import threading
@@ -27,10 +27,11 @@ import math
 
 # pyutil modules
 import DoQ
+from compat import setdefault
 from debugprint import debugprint
 from humanreadable import hr
 
-# Our Modules:
+# Mnet modules
 import Cache
 from CleanLogDb import CleanLogDbEnv
 from bsddb3 import db, dbobj
@@ -39,7 +40,6 @@ from confutils import confman
 import fileutil
 import idlib
 import mojoutil
-from mojoutil import setdefault
 import mojosixbit
 
 true = 1

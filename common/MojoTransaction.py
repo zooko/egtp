@@ -1,14 +1,15 @@
 #!/usr/bin/env python
 #
+#  Copyright (c) 2002 Bryce "Zooko" Wilcox-O'Hearn
 #  Copyright (c) 2002 Autonomous Zone Industries
 #  This file is licensed under the
 #    GNU Lesser General Public License v2.1.
 #    See the file COPYING or visit http://www.gnu.org/ for details.
 #
-__cvsid = '$Id: MojoTransaction.py,v 1.9 2002/03/28 18:39:50 zooko Exp $'
+__cvsid = '$Id: MojoTransaction.py,v 1.10 2002/06/25 02:12:27 zooko Exp $'
 
 
-# standard modules
+# Python standard library modules
 import copy
 import exceptions
 import math
@@ -24,6 +25,7 @@ import types
 import pickle
 
 # pyutil modules
+from compat import setdefault
 from config import DEBUG_MODE
 from debugprint import debugprint
 
@@ -48,7 +50,6 @@ from UnreliableHandicapper import UnreliableHandicapper
 import confutils
 from confutils import confman
 import counterparties
-from dictutil import setdefault
 from humanreadable import hr
 import idlib
 import ipaddresslib
