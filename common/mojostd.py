@@ -12,11 +12,10 @@
 # the sub modules that import things from this (debug, confutils,
 # mojoutil, idlib, etc..)
 #
-__cvsid = '$Id: mojostd.py,v 1.8 2002/07/16 22:00:20 zooko Exp $'
+__cvsid = '$Id: mojostd.py,v 1.9 2002/07/17 01:58:54 zooko Exp $'
 
 
-### Imports:
-# Standard Modules:
+# Python standard library modules
 import UserDict
 import copy
 import binascii
@@ -38,21 +37,27 @@ import types
 import re
 import whrandom
 
+# pyutil modules
+from xor import xor
 
-### Our modules:
+# EGTP modules
+import EGTPConstants
+
+# Mnet modules
 import HashRandom
 true = 1
 false = 0
 from VersionNumber import VersionNumber
 import dictutil
 import fileutil
-from humanreadable import hr
+import humanreadable
 import mencode
 import modval
 import mojosixbit
 import randsource
 import timeutil
 import time
+
 
 def iso_utc_time(t=None):
     """
@@ -116,18 +121,18 @@ if os.environ.has_key('HOME'):
 else:
     # The environment variable wasn't set, so use this hardcoded constant:
     if sys.platform in ("linux", "bsd"):
-        HOME_DIR = os.path.normpath("/var/tmp/mojonation")
+        HOME_DIR = os.path.normpath("/var/tmp/egtp")
     else:
         HOME_DIR = os.path.normpath(r"\My Documents")
 
 if os.environ.has_key('EGTPCONFDIR'):
     BROKER_DIR = os.path.normpath(
-            os.path.join("${EGTPCONFDIR}", "broker")
+            os.path.join(os.environ.get('EGTPCONFDIR'), "broker")
         )
 else:
     # The environment variable wasn't set, so use this hardcoded constant:
     BROKER_DIR = os.path.normpath(
-            os.path.join(HOME_DIR, ".mojonation/broker")
+            os.path.join(HOME_DIR, ".egtp/broker")
         )
     # !X! Note: Make sure all platforms can have directory names beginning with ".".
 
@@ -266,8 +271,8 @@ class DebugStream:
             "debug", "user", or specific things that you might want to get diagnostics on e.g.
             "commstrats", "comm hints", "accounting".
         @param args if a tuple is specified output will be run through the % operator with args:
-            "output = output % hr(args)"  The advantage of this is that the possibly expensive %
-            and`hr()' functions won't be executed unless the message is being printed.
+            "output = output % humanreadable.hr(args)"  The advantage of this is that the possibly expensive %
+            and`humanreadable.hr()' functions won't be executed unless the message is being printed.
         """
         # Note:  This interface overloads the standard file write interface.  Make sure this is always a compatible
         # superset of the standard file interface, so we can pass this around to third-party or standard modules
@@ -282,8 +287,9 @@ class DebugStream:
         if self.log_vs and vs:
             if not self.log_vs.has_key(vs):
                 return
-        if type(output) == types.StringType:
-            if self.lastchar == '\n':
+        if type(output) is types.StringType:
+            # This code gets executed a lot, so it is a shame to do a regex here.  Ultimately, all code should call debugprint() from the debugprint module to prepend the time, and this code, or better yet the new Python standard library logging module, will just be responsible for writing it to a log file.
+            if (self.lastchar == '\n') and not (timeutil.ISO_UTC_TIME_RE.match(output)):
                 timestr = iso_utc_time()
                 if not vs:
                     vs=""
@@ -294,7 +300,7 @@ class DebugStream:
 
             if args:
                 try:
-                    output = output % tuple(map(hr, args))
+                    output = output % tuple(map(humanreadable.hr, args))
                 except TypeError, e:
                     output = "ERROR: output string '%s' contained invalid %% expansion (note that we only do %%s around here), error: %s, args: %s\n" % (`output`, e, `args`)
 
@@ -365,13 +371,15 @@ else:
         # write directly to a log file by default on windows
         __logfile = generate_mojolog_filename()
 
-if os.environ.has_key('__RUN_MOJO_BROKER_SILENT') or ('--no-log-stderr' in sys.argv):
+if '--no-log-stderr' in sys.argv:
     __logstream = None
 else:
     __logstream = sys.stderr
 
 mojolog = DebugStream(logstream=__logstream, logfile=__logfile)
-stderr = mojolog  # DEPRECATED: old was debug.stderr.write, new is debug.mojolog.write
+stderr = mojolog  # DEPRECATED: old was debug.stderr.write, new is debug.mojolog.write, newest is "debugprint" from the debugprint module in the pyutil project
+sys.stdout = mojolog
+sys.stderr = mojolog
 
 # create a mojolog-current symlink on systems that support it.
 if (__logfile is not None) and hasattr(os, 'symlink'):
@@ -436,7 +444,7 @@ def stringToDict(string) :
     try:
         return mencode.mdecode(string)
     except mencode.MencodeError:
-        raise IllFormedError, 'mdecode error; cannot mdecode %s' % hr(string)
+        raise IllFormedError, 'mdecode error; cannot mdecode %s' % humanreadable.hr(string)
 
 def dictToString(dict) :
     """
@@ -585,41 +593,6 @@ class cryptutilError(StandardError):
 class OAEPError(cryptutilError):
     pass
 
-def xor(str1, str2):
-    """
-    @precondition `str1' and `str2' must be of the same length.: len(str1) == len(str2): "str1: %s, str2: %s" % (hr(str1), hr(str2))
-    """
-    assert len(str1) == len(str2), "`str1' and `str2' must be of the same length." + " -- " + "str1: %s, str2: %s" % (hr(str1), hr(str2))
-
-    try:
-        # This should be faster
-        import array
-        if len(str1)%4 == 0:
-            a1 = array.array('i',str1)
-            a2 = array.array('i',str2)
-            for i in range(len(a1)):
-                a2[i] = a2[i]^a1[i]
-        elif len(str1)%2 == 0:
-            a1 = array.array('h',str1)
-            a2 = array.array('h',str2)
-            for i in range(len(a1)):
-                a2[i] = a2[i]^a1[i]
-        else:
-            a1 = array.array('c',str1)
-            a2 = array.array('c',str2)
-            for i in range(len(a1)):
-                a2[i] = chr(ord(a2[i])^ord(a1[i]))
-
-        return a2.tostring()
-
-    except ImportError:
-        # XXX pleeeease speed me up.  (Crypto++?)  --Zooko 2000-07-29
-        # Could use cStringIO, array or struct, or convert to longs
-        res = ''
-        for i in range(len(str1)):
-            res = res + chr(ord(str1[i]) ^ ord(str2[i]))
-
-        return res
 
 def hmac(key, message):
     SIZE_OF_SHA1_INPUT = 64
@@ -665,26 +638,26 @@ def oaep(m, emLen, p=""):
     before passing to modval.
 
     @param m the message to be encoded
-    @param emLen the intended length of the padded form (should be 128)
+    @param emLen the intended length of the padded form (should be EGTPConstants.SIZE_OF_MODULAR_VALUES)
     @param p encoding parameters; we use empty string
 
-    @precondition The length of `p' must be less than or equal to the input limitation for SHA-1.: len(p) <= ((2^61)-1): "p: %s" % hr(p)
-    @precondition `emLen' must be big enough.: emLen >= (2 * 20) + 1: "emLen: %s, 20: %s" % (hr(emLen), hr(20))
-    @precondition The length of `m' must be small enough to fit.: len(m) <= (emLen - (2 * 20) - 1): "emLen: %s, 20: %s" % (hr(emLen), hr(20))
+    @precondition The length of `p' must be less than or equal to the input limitation for SHA-1.: len(p) <= ((2^61)-1): "p: %s" % humanreadable.hr(p)
+    @precondition `emLen' must be big enough.: emLen >= (2 * EGTPConstants.SIZE_OF_UNIQS) + 1: "emLen: %s, EGTPConstants.SIZE_OF_UNIQS: %s" % (humanreadable.hr(emLen), humanreadable.hr(EGTPConstants.SIZE_OF_UNIQS))
+    @precondition The length of `m' must be small enough to fit.: len(m) <= (emLen - (2 * EGTPConstants.SIZE_OF_UNIQS) - 1): "emLen: %s, EGTPConstants.SIZE_OF_UNIQS: %s" % (humanreadable.hr(emLen), humanreadable.hr(EGTPConstants.SIZE_OF_UNIQS))
     """
-    assert len(p) <= ((2^61)-1), "The length of `p' must be less than or equal to the input limitation for SHA-1." + " -- " + "p: %s" % hr(p)
-    assert emLen >= (2 * 20) + 1, "`emLen' must be big enough." + " -- " + "emLen: %s, 20: %s" % (hr(emLen), hr(20))
-    assert len(m) <= (emLen - (2 * 20) - 1), "The length of `m' must be small enough to fit." + " -- " + "emLen: %s, 20: %s" % (hr(emLen), hr(20))
+    assert len(p) <= ((2^61)-1), "The length of `p' must be less than or equal to the input limitation for SHA-1." + " -- " + "p: %s" % humanreadable.hr(p)
+    assert emLen >= (2 * EGTPConstants.SIZE_OF_UNIQS) + 1, "`emLen' must be big enough." + " -- " + "emLen: %s, EGTPConstants.SIZE_OF_UNIQS: %s" % (humanreadable.hr(emLen), humanreadable.hr(EGTPConstants.SIZE_OF_UNIQS))
+    assert len(m) <= (emLen - (2 * EGTPConstants.SIZE_OF_UNIQS) - 1), "The length of `m' must be small enough to fit." + " -- " + "emLen: %s, EGTPConstants.SIZE_OF_UNIQS: %s" % (humanreadable.hr(emLen), humanreadable.hr(EGTPConstants.SIZE_OF_UNIQS))
 
-    hLen = 20
+    hLen = EGTPConstants.SIZE_OF_UNIQS
 
-    # mojolog.write("mojoutil.oaep(): -- -- -- -- -- -- m: %s\n" % hr(m))
-    # mojolog.write("mojoutil.oaep(): -- -- -- -- -- -- emLen: %s\n" % hr(emLen))
+    # mojolog.write("mojoutil.oaep(): -- -- -- -- -- -- m: %s\n" % humanreadable.hr(m))
+    # mojolog.write("mojoutil.oaep(): -- -- -- -- -- -- emLen: %s\n" % humanreadable.hr(emLen))
     ps = '\000' * (emLen - len(m) - (2 * hLen) - 1)
-    # mojolog.write("mojoutil.oaep(): -- -- -- -- -- -- ps: %s\n" % hr(ps))
+    # mojolog.write("mojoutil.oaep(): -- -- -- -- -- -- ps: %s\n" % humanreadable.hr(ps))
     pHash = sha.new(p).digest()
     db = pHash + ps + '\001' + m
-    # mojolog.write("mojoutil.oaep(): -- -- -- -- -- -- db: %s\n" % hr(db))
+    # mojolog.write("mojoutil.oaep(): -- -- -- -- -- -- db: %s\n" % humanreadable.hr(db))
     seed = randsource.get(hLen)
     dbMask = mgf1(seed, emLen - hLen)
     maskedDB = xor(db, dbMask)
@@ -694,7 +667,7 @@ def oaep(m, emLen, p=""):
 
     assert len(em) == emLen
 
-    # mojolog.write("mojoutil.oaep(): -- -- -- -- -- -- em: %s\n" % hr(em))
+    # mojolog.write("mojoutil.oaep(): -- -- -- -- -- -- em: %s\n" % humanreadable.hr(em))
     return em
 
 def oaep_decode(em, p=""):
@@ -711,25 +684,25 @@ def oaep_decode(em, p=""):
     """
     assert len(p) <= ((2^61)-1), "The length of `p' must be less than or equal to the input limitation for SHA-1."
 
-    # mojolog.write("mojoutil.oaep_decode(): -- -- -- -- -- -- em: %s\n" % hr(em))
+    # mojolog.write("mojoutil.oaep_decode(): -- -- -- -- -- -- em: %s\n" % humanreadable.hr(em))
 
-    if len(em) < (2 * 20) + 1:
+    if len(em) < (2 * EGTPConstants.SIZE_OF_UNIQS) + 1:
         raise OAEPError, "decoding error: `em' is not long enough."
 
-    hLen = 20
+    hLen = EGTPConstants.SIZE_OF_UNIQS
     maskedSeed = em[:hLen]
-    # mojolog.write("mojoutil.oaep_decode(): -- -- -- -- -- -- maskedSeed: %s\n" % hr(maskedSeed))
+    # mojolog.write("mojoutil.oaep_decode(): -- -- -- -- -- -- maskedSeed: %s\n" % humanreadable.hr(maskedSeed))
     maskedDB = em[hLen:]
-    # mojolog.write("mojoutil.oaep_decode(): -- -- -- -- -- -- maskedDB: %s\n" % hr(maskedDB))
+    # mojolog.write("mojoutil.oaep_decode(): -- -- -- -- -- -- maskedDB: %s\n" % humanreadable.hr(maskedDB))
     assert len(maskedDB) == (len(em) - hLen)
     seedMask = mgf1(maskedDB, hLen)
-    # mojolog.write("mojoutil.oaep_decode(): -- -- -- -- -- -- seedMask: %s\n" % hr(seedMask))
+    # mojolog.write("mojoutil.oaep_decode(): -- -- -- -- -- -- seedMask: %s\n" % humanreadable.hr(seedMask))
     seed = xor(maskedSeed, seedMask)
-    # mojolog.write("mojoutil.oaep_decode(): -- -- -- -- -- -- seed: %s\n" % hr(seed))
+    # mojolog.write("mojoutil.oaep_decode(): -- -- -- -- -- -- seed: %s\n" % humanreadable.hr(seed))
     dbMask = mgf1(seed, len(em) - hLen)
-    # mojolog.write("mojoutil.oaep_decode(): -- -- -- -- -- -- dbMask: %s\n" % hr(dbMask))
+    # mojolog.write("mojoutil.oaep_decode(): -- -- -- -- -- -- dbMask: %s\n" % humanreadable.hr(dbMask))
     db = xor(maskedDB, dbMask)
-    # mojolog.write("mojoutil.oaep_decode(): -- -- -- -- -- -- db: %s\n" % hr(db))
+    # mojolog.write("mojoutil.oaep_decode(): -- -- -- -- -- -- db: %s\n" % humanreadable.hr(db))
     pHash = sha.sha(p).digest()
 
     pHashPrime = db[:hLen]
@@ -748,7 +721,7 @@ def oaep_decode(em, p=""):
     m = db[i+1:] # This is here instead of after the check because that's the way it is written in the PKCS doc.  --Zooko 2000-07-29
 
     if pHash != pHashPrime:
-        raise OAEPError, "decoding error: pHash: %s != pHashPrime: %s" % (hr(pHash), hr(pHashPrime))
+        raise OAEPError, "decoding error: pHash: %s != pHashPrime: %s" % (humanreadable.hr(pHash), humanreadable.hr(pHashPrime))
 
     return m
 
@@ -783,16 +756,16 @@ def _canon(numstr, size):
     """
     @param numstr the string representation of an integer which will be canonicalized
     @param size the size in 8-bit bytes (octets) that numbers of this kind should have;  This
-        number should almost always be 20 or
-        128
+        number should almost always be EGTPConstants.SIZE_OF_UNIQS or
+        EGTPConstants.SIZE_OF_MODULAR_VALUES
 
     @return the canonical version of `numstr' for numbers of its type
 
-    @precondition `numstr' must be a string.: type(numstr) == types.StringType: "numstr: %s :: %s" % (hr(numstr), `type(numstr)`)
-    @precondition `numstr', not counting leading zeroes, is not too large.: len(strip_leading_zeroes(numstr)) <= size: "numstr: %s" % hr(numstr)
+    @precondition `numstr' must be a string.: type(numstr) == types.StringType: "numstr: %s :: %s" % (humanreadable.hr(numstr), `type(numstr)`)
+    @precondition `numstr', not counting leading zeroes, is not too large.: len(strip_leading_zeroes(numstr)) <= size: "numstr: %s" % humanreadable.hr(numstr)
     """
-    assert type(numstr) == types.StringType, "precondition: `numstr' must be a string." + " -- " + "numstr: %s :: %s" % (hr(numstr), `type(numstr)`)
-    assert len(strip_leading_zeroes(numstr)) <= size, "precondition: `numstr', not counting leading zeroes, is not too large." + " -- " + "numstr: %s" % hr(numstr)
+    assert type(numstr) == types.StringType, "precondition: `numstr' must be a string." + " -- " + "numstr: %s :: %s" % (humanreadable.hr(numstr), `type(numstr)`)
+    assert len(strip_leading_zeroes(numstr)) <= size, "precondition: `numstr', not counting leading zeroes, is not too large." + " -- " + "numstr: %s" % humanreadable.hr(numstr)
 
     if len(numstr) >= size:
         return numstr[len(numstr) - size:]
@@ -805,9 +778,9 @@ def strip_leading_zeroes(numstr):
 
     @return `numstr' minus any leading zero bytes
 
-    @precondition `numstr' must be a string.: type(numstr) == types.StringType: "numstr: %s :: %s" % (hr(numstr), `type(numstr)`)
+    @precondition `numstr' must be a string.: type(numstr) == types.StringType: "numstr: %s :: %s" % (humanreadable.hr(numstr), `type(numstr)`)
     """
-    assert type(numstr) == types.StringType, "precondition: `numstr' must be a string." + " -- " + "numstr: %s :: %s" % (hr(numstr), `type(numstr)`)
+    assert type(numstr) == types.StringType, "precondition: `numstr' must be a string." + " -- " + "numstr: %s :: %s" % (humanreadable.hr(numstr), `type(numstr)`)
 
     if len(numstr) == 0:
         return numstr
@@ -832,7 +805,7 @@ def is_canonical_modval(astr):
 
     @memoizable
     """
-    return is_canonical(astr, 128)
+    return is_canonical(astr, EGTPConstants.SIZE_OF_MODULAR_VALUES)
 
 def is_canonical_uniq(astr):
     """
@@ -840,7 +813,7 @@ def is_canonical_uniq(astr):
 
     @memoizable
     """
-    return is_canonical(astr, 20)
+    return is_canonical(astr, EGTPConstants.SIZE_OF_UNIQS)
 
 def test_strip_leading_zeroes():
     str = '\000'
@@ -1026,6 +999,10 @@ confdefaults["PATH"] = {}
 
 confdefaults["PATH"]["HOME_DIR"] = HOME_DIR
 
+if not os.environ.has_key('EGTPDIR'):
+    # We need to know where sourcedir is in order to set up webroot_dir and other things:
+    raise SystemExit, 'Please set the Environment Variable "EGTPDIR" to refer to your source root directory.'
+
 ### Broker paths:
 # BROKER_DIR is the root directory of all client-side configuration and data files.
 # For now we just use the value of the environment variable "EGTPCONFDIR",
@@ -1078,7 +1055,7 @@ confdefaults["PATH"]["CONTENT_TRACKER_DB_DIR"] = os.path.normpath(
 # CONTENT_TYPEDEF_DIR is used by clients and content trackers for
 # storing content tracker content type definition (".mct") xml files.
 confdefaults["PATH"]["CONTENT_TYPEDEF_DIR"] = os.path.normpath(
-        os.path.join("${EVILDIR}", "contenttypes")
+        os.path.join("${EGTPDIR}", "contenttypes")
     )
 
 # MOJO_TRANSACTION_MANAGER_DB_DIR is used for storing persistent info
@@ -1101,11 +1078,11 @@ confdefaults["PATH"]["PID_FILE"] = os.path.normpath(
     )
 
 confdefaults["PATH"]["WEBROOT_DIR"] = os.path.normpath(
-        os.path.join("${EVILDIR}", "localweb", "webroot")
+        os.path.join("${EGTPDIR}", "localweb", "webroot")
     )
 
 confdefaults["PATH"]["WEB_TEMPLATE_DIR"] = os.path.normpath(
-        os.path.join("${EVILDIR}", "localweb", "templates")
+        os.path.join("${EGTPDIR}", "localweb", "templates")
     )
 
 confdefaults["PATH"]["INTRO_PAGE_v2"] = os.path.normpath(
@@ -1122,18 +1099,18 @@ confdefaults["PATH"]["BOOT_PAGE"] = os.path.normpath(
     )
 
 confdefaults["PATH"]["QUICKSTART"] = os.path.normpath(
-        os.path.join("${EVILDIR}", "quickstart.txt")
+        os.path.join("${EGTPDIR}", "quickstart.txt")
     )
 
 readmename = 'README'
 if sys.platform == 'win32':
     readmename = 'README.txt'
 confdefaults["PATH"]["README_FILE_v2"] = os.path.normpath(
-        os.path.join("${EVILDIR}", readmename)
+        os.path.join("${EGTPDIR}", readmename)
     )
 
 confdefaults["PATH"]["FAQ_FILE"] = os.path.normpath(
-        os.path.join("${EVILDIR}", "faq.txt")
+        os.path.join("${EGTPDIR}", "faq.txt")
     )
 
 confdefaults["PATH"]["MOJOMOD_DIR"] = os.path.normpath(
@@ -1196,10 +1173,10 @@ dictutil.deep_update(confdefaults,
             # these specify which services the Broker should run
             "YES_NO": {
                 # for Server Settings
-                "RUN_LOCALHOST_GATEWAY": "yes",
-                "RUN_WXBROKER":          "no",
+                "RUN_LOCALHOST_GATEWAY": "no",
+                "RUN_WXBROKER":          "yes",
                 "RUN_META_TRACKER":      "no",
-                "RUN_BLOCK_SERVER":      "yes",
+                "RUN_BLOCK_SERVER":      "no",
                 "RUN_CONTENT_TRACKER":   "no",
 
                 "RUN_RELAY_SERVER":      "no",
@@ -1266,7 +1243,7 @@ dictutil.deep_update(confdefaults,
             # (useful for hackers who run things behind a NAT/masq firewall
             # with a port redirected through it)
             "IP_ADDRESS_OVERRIDE" : "",
-            "IP_ADDRESS_DETECTOR_HOST": "198.11.16.136",    # if Yahoo's DNS is down, the internet might as well no longer exist
+            "IP_ADDRESS_DETECTOR_HOST": "198.11.16.136",
             # The number of TCP connections to hold open in case you deal with that counterparty
             # again.  I'm not sure what the best number here is.  Maybe 0.  But if you have
             # frequent traffic, perhaps with relay servers, you might benefit from a higher
@@ -1391,41 +1368,6 @@ dictutil.deep_update(confdefaults,
             "TRANSACTION_MANAGER_ANNOUNCED_PORT": "",
             "MAX_TIMEOUT" : "3600",
 
-            "ROOT_ID_TRACKER_CONTACT_INFO": {   # XXX leaving this in the config file for now for testing purposes - 2001-06-07
-                    'connection strategies': {
-                            '0': {
-                                    'comm strategy type': 'crypto',
-                                    'lowerstrategy': {
-                                            'comm strategy type': 'TCP',
-                                            'IP address': "tracker02.mojonation.net",
-                                            'port number': '25333'
-                                            },
-                                    'pubkey': {
-                                            'key values': {
-                                                    'public exponent': '3',
-                                                    'public modulus': 'pvqpH8n5JLH6oP439EqAsSb8WKOCMDf0CTs3n9_NldYhIRTMCV_xPtNYfTY6ofkQ8PjXgMPOwVDI3U6oy0n2Qk3nFWrzN_E9OEFm8BbdzYnygR-8bT8wwQenIuoLPXg2WUGDnrW4ywbwOfrJcT3Uf28nOzviku1DAOPLVc2w_3s',
-                                                    },
-                                            'key header': {
-                                                    'usage': 'only for communication security',
-                                                    'type': 'public',
-                                                    'cryptosystem': 'RSA'
-                                                    }
-                                            }
-                                    }
-                            },
-                    'services': {
-                        '0' : {
-                            'type': "meta tracker",
-                            'hello price': str(10),
-                            'lookup contact info price': str(10),
-                            'list servers price': str(10),
-                            'seconds until expiration': str(600),
-                            },
-                        },
-                    },
-            # from mojonation.net:25000/bootpage.txt as of 2001-06-07
-            "MULTI_ROOT_ID_TRACKER_CONTACT_INFO": "[{'connection strategies': [{'comm strategy type': 'crypto', 'pubkey': {'key values': {'public exponent': '3', 'public modulus': 'pvqpH8n5JLH6oP439EqAsSb8WKOCMDf0CTs3n9_NldYhIRTMCV_xPtNYfTY6ofkQ8PjXgMPOwVDI3U6oy0n2Qk3nFWrzN_E9OEFm8BbdzYnygR-8bT8wwQenIuoLPXg2WUGDnrW4ywbwOfrJcT3Uf28nOzviku1DAOPLVc2w_3s'}, 'key header': {'usage': 'only for communication security', 'type': 'public', 'cryptosystem': 'RSA'}}, 'zlib': 'yes', 'lowerstrategy': {'comm strategy type': 'TCP', 'IP address': '64.71.128.167', 'port number': '25333'}}], 'services': [{'seconds until expiration': '600', 'list servers price': '10', 'hello price': '1', 'type': 'meta tracker', 'lookup contact info price': '10'}]}, {'connection strategies': [{'comm strategy type': 'crypto', 'pubkey': {'key values': {'public exponent': '3', 'public modulus': 'wjUrxwQdbuBWqNS-ENMgq0UZc-WKllTwmLtyS_fm3D92sgjf9-hgBXkKWXITQwKzYNGP6PqtxXIGNtafVq--Wxp72M4ob2m9PCp5pVO_gevwJGDjHImzwLtw7gwNwtsHSRPdW6HDDKXCLn6N4V_TFolbM8yqAvLqaPAiIonuf_0'}, 'key header': {'usage': 'only for communication security', 'type': 'public', 'cryptosystem': 'RSA'}}, 'zlib': 'yes', 'lowerstrategy': {'comm strategy type': 'TCP', 'IP address': '64.71.128.169', 'port number': '20301'}}], 'result': 'success', 'services': [{'seconds until expiration': '600', 'list servers price': '10', 'hello price': '1', 'type': 'meta tracker', 'lookup contact info price': '10'}]}, {'connection strategies': [{'comm strategy type': 'crypto', 'pubkey': {'key values': {'public exponent': '3', 'public modulus': 'xUslS7yfADBu4ux47nneP3Y-YJJ-RFClSpIGRknvEXf_PZ87Q11NxykGXTrNT4TkK-sF9fbPvpYcXwL9p0RWKX5pGu1ljHrA_DFtwlXoVhbVv2BIjzaCuiERn008tuK2GHleoN5OzjTw_jtHBqFaXE0DqEZ19UgGxw0G6GbJTDs'}, 'key header': {'usage': 'only for communication security', 'type': 'public', 'cryptosystem': 'RSA'}}, 'zlib': 'yes', 'lowerstrategy': {'comm strategy type': 'TCP', 'IP address': '64.71.128.168', 'port number': '25333'}}], 'services': [{'seconds until expiration': '600', 'list servers price': '10', 'hello price': '1', 'type': 'meta tracker', 'lookup contact info price': '10'}]}]",
-
             "COUNTERPARTY": {
                     # This is how many messages the latency is averaged over in dynamic timing collections
                     "AVERAGING_TIMESCALE_v2": "100.0",
@@ -1519,13 +1461,7 @@ dictutil.deep_update(confdefaults,
     ) # dictutil.deep_update()
 
 
-# On windows we have a simple gui window to act as a broker navbar.
-if platform == "win32":
-    confdefaults["EXTENSION_MODS"] = {
-        '0': "BrokerTk",   # the Tk based GUI interface now used on windows
-    }
-else:
-    confdefaults["EXTENSION_MODS"] = {}  # A list of extension mods.
+confdefaults["EXTENSION_MODS"] = {}  # A list of extension mods.
 
 
 
@@ -1543,7 +1479,13 @@ def lines_to_dict(lines):
         first = lines.index(line) + 1
         last = first
 
-        key, value = string.split(line, ':', 1)
+        try:
+            key, value = string.split(line, ':', 1)
+        except ValueError:
+            print "BAD CONFUTILS FORMAT..  what's wrong with ?"
+            print "key, value = string.split(%s, ':', 1)" % `line`
+            raise
+
         key = string.strip(key)
         value = string.strip(value)
         if dict.has_key(key):
@@ -1588,6 +1530,13 @@ class ConfManager(UserDict.UserDict):
         self.update(copy.deepcopy(defaults)) # Copy defaults, don't alter them!
         self._transient = false
 
+##    def get(self, key, default=None, strictkey=false):
+##        result = Cache.SimpleCache2.get(self, key, default=default, strictkey=strictkey)
+##        # We never store Nones in a ConfMan.  If you're looking at a None, you actually mean to get default.
+##        if result is None:
+##            result = default
+##        return result
+
     def set_transient(self):
         """
         After this is called, no changes can be made to the persistent broker.conf file, although
@@ -1602,8 +1551,8 @@ class ConfManager(UserDict.UserDict):
         filedict = lines_to_dict(file.readlines())
         dictutil.deep_update(self.dict, filedict)
         file.close()
-        if VersionNumber(self.dict.get("EGTP_VERSION_STR")) != VersionNumber(EGTPVersion.versionstr_full):
-            mojolog.write("NOTE: Loading '%s' version config file while running '%s' version confutils\n" % (self.dict.get("EGTP_VERSION_STR"), EGTPVersion.versionstr_full))
+        if VersionNumber(self.get("EGTP_VERSION_STR")) != VersionNumber(EGTPVersion.versionstr_full):
+            mojolog.write("NOTE: Loading '%s' version config file while running '%s' version confutils\n" % (self.get("EGTP_VERSION_STR"), EGTPVersion.versionstr_full))
 
         if platform == 'win32': 
             confdefaults['TCP_MAX_CONNECTIONS'] = 50
@@ -1628,7 +1577,7 @@ class ConfManager(UserDict.UserDict):
 
         # note for hackers
         self.dict['DEBUG_MODE'] = "please set operating system env var 'PYUTILDEBUG' instead of using this variable"
-        # The reason for this is that there are some inner loops that get defined to behave more or less debuggishly at module load time.  If you use this runtime variable, the runtime and load time "debug" flags could be different, causing confusion.
+        # The reason for this is that there are some inner loops that get defined to behave debuggishly or not at module load time.  If you use this runtime variable, the runtime and load time "debug" flags could be different, causing confusion.
         return
 
     def save(self):
@@ -1725,6 +1674,7 @@ class ConfManager(UserDict.UserDict):
             else:
                 return default
         if thing is None:
+            # You can't store Nones in config files.
             thing = default
         return thing
     
@@ -1778,6 +1728,7 @@ class ConfManager(UserDict.UserDict):
 
         -If default is None, then if a key is missing anywhere in the path specified, [] is returned, else default is
         returned.
+        XXX I think that that "[]" should be "{}" in the previous line...  --Zooko 2002-07-15
         """
         if default is None:
             default = {}
@@ -1812,15 +1763,15 @@ class ConfManager(UserDict.UserDict):
         mojolog.write("*** in onetime, PATHS dict: %s\n", args=(self.dict.get('PATHS'),), vs='conf', v=6)
         if self.dict.has_key("PATHS"):
             mojolog.write("*** Converting `PATHS' section of conf file into new `PATH' section\n", vs='conf', v=0)
-            evildir = os.environ.get('EVILDIR', '')
-            evilconfdir = os.environ.get('EGTPCONFDIR', '')
+            egtpdir = os.environ.get('EGTPDIR', '')
+            egtpconfdir = os.environ.get('EGTPCONFDIR', '')
             home = os.environ.get('HOME', '')
 
             # a list of tuples of thing to replace with what to
             # replace it with.  this defines the order that the
             # replacements will be done in.  (since HOME is often a
             # part of the first two, it should be done last)
-            replacements = [(evildir, '${EVILDIR}'), (evilconfdir, '${EGTPCONFDIR}'), (home, '${HOME}')]
+            replacements = [(egtpdir, '${EGTPDIR}'), (egtpconfdir, '${EGTPCONFDIR}'), (home, '${HOME}')]
 
             for key, value in self.dict["PATHS"].items():
                 for prefix, replacement in replacements:
@@ -1901,16 +1852,3 @@ def test_hmac():
         if type(result)==type(1L): result=longtobytes(result,20)
         assert hmac(key,data) == result, "Failed on %s" % repr((key,data,result))
 
-def run(argv):
-    if len(argv) > 1:
-        if argv[1] == "test":
-            do_tests()
-        elif argv[1] == "dump":
-            sys.stdout.writelines(dict_to_lines(confman.dict))
-        else:
-            print 'Unknown option "%s".' % argv[1]
-    else:
-        print 'Config file "%s" updated.' % confman["PATH"]["BROKER_CONF"]
-
-if __name__ == '__main__':
-    run(sys.argv)
