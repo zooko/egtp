@@ -6,19 +6,58 @@
 #    GNU Lesser General Public License v2.1.
 #    See the file COPYING or visit http://www.gnu.org/ for details.
 #
-__cvsid = '$Id: interfaces.py,v 1.2 2002/03/14 16:50:30 zooko Exp $'
+__cvsid = '$Id: interfaces.py,v 1.3 2002/03/28 18:39:50 zooko Exp $'
 
 # standard Python modules
 import exceptions
 
+# pyutil modules
+from humanreadable import hr
+
+# EGTP modules
+from IRemoteOpHandler import IRemoteOpHandler
+
 class NotImplementedError(exceptions.StandardError): pass
+
+class IVerifier:
+    """
+    Determines whether a key -> object mapping is legitimate.
+    """
+    def __init__(self):
+        pass
+
+    def verify_mapping(self, key, object):
+        """
+        @returns true if and only if `object' is a valid result for `key'
+
+        @precondition key must be well-formed.: self.verify_key(key): "key: %s" % hr(key)
+
+        @noblock This method may not block, either by waiting for network traffic, by waiting for a lock, or by sleeping.
+        """
+        assert self.verify_key(key), "precondition: key must be well-formed." + " -- " + "key: %s" % hr(key)
+        raise NotImplementedError
+        pass
+
+    def verify_key(self, key):
+        """
+        @returns true if and only if `key' is well-formed
+
+        @noblock This method may not block, either by waiting for network traffic, by waiting for a lock, or by sleeping.
+        """
+        raise NotImplementedError
+        pass
 
 class ILookupManager:
     """
-    This is an "interface" class, which in Python means that it is really just a form of
-    documentation.  Hello, hackers!
+    Performs lookups and publications.
     """
-    def __init__(self):
+    def __init__(self, verifier):
+        """
+        @param a verifier object
+
+        @noblock This method may not block, either by waiting for network traffic, by waiting for a lock, or by sleeping.
+        """
+        self.verifier = verifier
         pass
 
     def lookup(self, key, lookuphand):
@@ -29,11 +68,16 @@ class ILookupManager:
             a bogus object manufactured by a powerful and malicious attacker.  (If you don't have
             self-authenticating keys, use a discovery manager instead.)
         @param lookuphand an object which satisfies the ILookupHandler interface
+
+        @precondition key must be well-formed according to the verifier.: self.verifier.verify_key(key): "key: %s" % hr(key)
+
+        @noblock This method may not block, either by waiting for network traffic, by waiting for a lock, or by sleeping.
         """
+        assert self.verifier.verify_key(key), "precondition: key must be well-formed according to the verifier." + " -- " + "key: %s" % hr(key)
         raise NotImplementedError
         pass
 
-    def publish(self, key, object):
+    def publish(self, key, object, publishhand=None):
         """
         @param key the key by which the object can subsequently to be looked up;  This key must be
             self-authenticating, i.e. given this key and an object, a lookup manager must be able
@@ -41,25 +85,47 @@ class ILookupManager:
             object manufactured by a powerful and malicious attacker.  (If you don't have self-
             authenticating keys, use a discovery manager instead.)
         @param object the thing to be published
+        @param publishhand an object which satisfies the IRemoteOpHandler interface, or `None'
+
+        @precondition key must be well-formed according to the verifier.: self.verifier.verify_key(key): "key: %s" % hr(key)
+        @precondition key-object pair must be valid mapping according to the verifier.: self.verifier.verify_mapping(key, object): "key: %s, object: %s" % (hr(key), hr(object),)
+
+        @noblock This method may not block, either by waiting for network traffic, by waiting for a lock, or by sleeping.
         """
+        assert self.verifier.verify_key(key), "precondition: key must be well-formed according to the verifier." + " -- " + "key: %s" % hr(key)
+        assert self.verifier.verify_mapping(key, object), "precondition: key-object pair must be valid mapping according to the verifier." + " -- " + "key: %s, object: %s" % (hr(key), hr(object),)
         raise NotImplementedError
         pass
 
-class ILookupHandler:
+class ILookupHandler(IRemoteOpHandler):
     """
-    This is an "interface" class, which in Python means that it is really just a form of documentation.  Hello, hackers!
+    Handles the results of one individual attempt to lookup.
+    """
+    def __init__(self, key, verifier):
+        """
+        @param the key that you are trying to look up
+        @param a verifier object
 
-    A "lookup handler" is an object which handles the results of one individual attempt to lookup.
-    """
-    def __init__(self):
+        @precondition key must be well-formed.: verifier.verify_key(key): "key: %s" % hr(key)
+
+        @noblock This method may not block, either by waiting for network traffic, by waiting for a lock, or by sleeping.
+        """
+        assert verifier.verify_key(key), "precondition: key must be well-formed." + " -- " + "key: %s" % hr(key)
+        self.key = key
+        self.verifier = verifier
         pass
 
     def result(self, object):
         """
-        The results are in!  Your lookup manager will already have verified that this value is
+        The results are in!  Your lookup manager will already have verified that this object is
         cryptographically proven to match the self-authenticating key.  You can now do what you want
         with the results.
+
+        @precondition key-object pair must be valid mapping according to the verifier.: self.verifier.verify_mapping(self.key, object): "self.key: %s, object: %s" % (hr(self.key), hr(object),)
+
+        @noblock This method may not block, either by waiting for network traffic, by waiting for a lock, or by sleeping.
         """
+        assert self.verifier.verify_mapping(self.key, object), "precondition: key-object pair must be valid mapping according to the verifier." + " -- " + "self.key: %s, object: %s" % (hr(self.key), hr(object),)
         raise NotImplementedError
         pass
 
@@ -70,6 +136,8 @@ class ILookupHandler:
         this query.  You can safely forget all about this particular query.
 
         @param reason a string describing why it failed (used for human-readable diagnostic output)
+
+        @noblock This method may not block, either by waiting for network traffic, by waiting for a lock, or by sleeping.
         """
         raise NotImplementedError
         pass
@@ -83,15 +151,20 @@ class ILookupHandler:
 
         A "hard" timeout, which means that the lookup manager gives up and will ignore any results
         which come in after this point, is signalled by a call to `fail()'.
+
+        @noblock This method may not block, either by waiting for network traffic, by waiting for a lock, or by sleeping.
         """
         raise NotImplementedError
         pass
 
 class IDiscoveryManager:
     """
-    This is an "interface" class, which in Python means that it is really just a form of documentation.  Hello, hackers!
+    Performs discoveries and discoverable publications.
     """
     def __init__(self):
+        """
+        @noblock This method may not block, either by waiting for network traffic, by waiting for a lock, or by sleeping.
+        """
         pass
 
     def discover(self, query, discoveryhand):
@@ -103,24 +176,26 @@ class IDiscoveryManager:
             should use a lookup manager instead of a discovery manager.  (The lookup manager will
             perform that verification for you.)
         @param discoveryhand an object which satisfies the IDiscoveryHandler interface
+
+        @noblock This method may not block, either by waiting for network traffic, by waiting for a lock, or by sleeping.
         """
         raise NotImplementedError
         pass
 
-    def publish(self, metadata, object):
+    def publish(self, metadata, object, publishhand=None):
         """
         @param metadata some metadata by which the object can subsequently to be discovered
         @param object the thing to be published
+        @param publishhand an object which satisfies the IRemoteOpHandler interface, or `None'
+
+        @noblock This method may not block, either by waiting for network traffic, by waiting for a lock, or by sleeping.
         """
         raise NotImplementedError
         pass
 
-class IDiscoveryHandler:
+class IDiscoveryHandler(IRemoteOpHandler):
     """
-    This is an "interface" class, which in Python means that it is really just a form of
-    documentation.  Hello, hackers!
-
-    A "discovery handler" is an object which handles the results of an individual query.
+    Handles the results of an individual discovery query.
     """
     def __init__(self):
         pass

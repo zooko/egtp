@@ -10,7 +10,7 @@
 #
 # BirthDate: 2000-06-08
 # CVS:
-__cvsid = '$Id: confutils.py,v 1.5 2002/03/11 17:35:17 zooko Exp $'
+__cvsid = '$Id: confutils.py,v 1.6 2002/03/28 18:39:51 zooko Exp $'
 
 
 # standard modules
@@ -34,7 +34,7 @@ if int(confman.get('MAX_VERBOSITY', 0)) >= 6:
     # Only enable automatic mdecoding of strings in debugprints if we have a high verbosity level; these are extremely
     # CPU, memory cache, and memory bus intensive.
     debugprint("WARNING: high verbosity level, performance will be impacted!\n")
-    humanreadable.mrepr.enable_mdecode = true
+    humanreadable.brepr.enable_mdecode = true
     # NOTE: if config.DEBUG evaluates to true then mdecoding will be enabled regardless
     # of verbosity level.
 

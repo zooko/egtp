@@ -5,7 +5,7 @@
 #    GNU Lesser General Public License v2.1.
 #    See the file COPYING or visit http://www.gnu.org/ for details.
 #
-__cvsid = '$Id: MojoTransaction.py,v 1.8 2002/03/13 21:24:31 zooko Exp $'
+__cvsid = '$Id: MojoTransaction.py,v 1.9 2002/03/28 18:39:50 zooko Exp $'
 
 
 # standard modules
@@ -185,12 +185,14 @@ class MojoTransactionManager:
         @precondition `listenport' must be a non-negative integer or `None'.: (listenport is None) or ((type(listenport) == types.IntType) and (listenport > 0)): "listenport: %s" % hr(listenport)
         @precondition `lookupman' must be an instance of interfaces.ILookupManager.: isinstance(lookupman, ILookupManager): "lookupman: %s :: %s" % (hr(lookupman), hr(type(lookupman)),)
         @precondition `discoveryman' must be an instance of interfaces.IDiscoveryManager.: isinstance(discoveryman, IDiscoveryManager): "discoveryman: %s :: %s" % (hr(discoveryman), hr(type(discoveryman)),)
+        @precondition This method must be called on the DoQ.: DoQ.doq.is_currently_doq(): "currentThread(): %s" % hr(threading.currentThread())
         """
         assert type(announced_service_dicts) == types.ListType, "precondition: `announced_service_dicts' must be a list." + " -- " + "announced_service_dicts: %s" % hr(announced_service_dicts)
         assert type(handler_funcs) == types.DictType, "precondition: `handler_funcs' must be a dict." + " -- " + "handler_funcs: %s" % hr(handler_funcs)
         assert (listenport is None) or ((type(listenport) == types.IntType) and (listenport > 0)), "precondition: `listenport' must be a non-negative integer or `None'." + " -- " + "listenport: %s" % hr(listenport)
         assert isinstance(lookupman, ILookupManager), "precondition: `lookupman' must be an instance of interfaces.ILookupManager." + " -- " + "lookupman: %s :: %s" % (hr(lookupman), hr(type(lookupman)),)
         assert isinstance(discoveryman, IDiscoveryManager), "precondition: `discoveryman' must be an instance of interfaces.IDiscoveryManager." + " -- " + "discoveryman: %s :: %s" % (hr(discoveryman), hr(type(discoveryman)),)
+        assert DoQ.doq.is_currently_doq(), "precondition: This method must be called on the DoQ." + " -- " + "currentThread(): %s" % hr(threading.currentThread())
 
         self._shuttingdownflag = false
 
@@ -534,6 +536,8 @@ class MojoTransactionManager:
             # Hm.  We haven't figured out how people can talk to us yet.  Might as well not bother announcing then.
             return
 
+        assert ((type(hello_body) is types.DictType) and (hello_body.has_key("connection strategies")) and (hello_body.get("connection strategies", [{}])[0].has_key("pubkey"))) or ((type(hello_body) is types.InstanceType) and (isinstance(hello_body, CommStrat)) and (hello_body._broker_id is not None)), "hello_body: %s" % hr(hello_body)
+        assert idlib.equal(self.get_id(), CommStrat.addr_to_id(hello_body)), "self.get_id(): %s, hello_body: %s" % (hr(self.get_id()), hr(hello_body),)
         self._lookupman.publish(self.get_id(), hello_body)
 
     def send_goodbye_to_metatrackers(self):
