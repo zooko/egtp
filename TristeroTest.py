@@ -6,12 +6,10 @@
 #    GNU Lesser General Public License v2.1.
 #    See the file COPYING or visit http://www.gnu.org/ for details.
 #
-__cvsid = '$Id: TristeroTest.py,v 1.1 2002/03/15 03:52:23 blanu Exp $'
+__cvsid = '$Id: TristeroTest.py,v 1.2 2002/03/15 18:48:24 zooko Exp $'
 
 # standard Python modules
 import threading, types
-
-from TristeroLookup import TristeroLookup
 
 # pyutil modules
 import DoQ
@@ -31,34 +29,13 @@ from interfaces import *
 # EGTP modules
 import CommStrat
 import Node
+from TristeroLookup import TristeroLookup
 
 true = 1
 false = 0
 
 confman['MAX_VERBOSITY'] = 0
 config.MAX_VERBOSITY = 0
-
-# a lookup man which uses only local data;  In a real app you need remote lookup in the form of MetaTrackers, Tristero, Chord, Plex, Alpine, or something.
-class LocalLookupMan(ILookupManager):
-    def __init__(self):
-        self.data = {}
-    def lookup(self, key, lookuphand):
-        if self.data.has_key(key):
-            lookuphand.result(self.data.get(key))
-        else:
-            lookuphand.fail()
-        return # `lookup()' never returns any return value!
-    def publish(self, egtpid, egtpaddr):
-        """
-        @precondition egtpid must be an id.: idlib.is_id(egtpid): "egtpid: %s :: %s" % (hr(egtpid), hr(type(egtpid)),)
-        @precondition egtpaddr must be a dict.: type(egtpaddr) is types.DictType: "egtpaddr: %s :: %s" % (hr(egtpaddr), hr(type(egtpaddr)),)
-        @precondition egtpid must match egtpaddr.: idlib.equal(egtpid, CommStrat.addr_to_id(egtpaddr)): "egtpid: %s, egtpaddr: %s" % (hr(egtpid), hr(egtpaddr), hr(egtpaddr.get_id(),))
-        """
-        assert idlib.is_id(egtpid), "precondition: egtpid must be an id." + " -- " + "egtpid: %s :: %s" % (hr(egtpid), hr(type(egtpid)),)
-        assert type(egtpaddr) is types.DictType, "precondition: egtpaddr must be a dict." + " -- " + "egtpaddr: %s :: %s" % (hr(egtpaddr), hr(type(egtpaddr)),)
-        assert idlib.equal(egtpid, CommStrat.addr_to_id(egtpaddr)), "precondition: egtpid must match egtpaddr." + " -- " + "egtpid: %s, egtpaddr: %s" % (hr(egtpid), hr(egtpaddr), hr(egtpaddr.get_id(),))
-
-        self.data[egtpid] = egtpaddr
 
 # a discovery man which uses only local data;  In a real app you need distributed discovery in the form of MetaTrackers, Tristero, Plex, Alpine, or something.
 class LocalDiscoveryMan(IDiscoveryManager):
