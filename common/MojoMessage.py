@@ -12,8 +12,8 @@ import types
 
 # pyutil modules
 from config import DEBUG_MODE
-import debug
-from humanreadable import hr
+from debugprint import debugprint
+import humanreadable
 
 # our modules
 import Cache
@@ -209,13 +209,13 @@ def makeInitialMessage(msgtype, msgbody, recipient_id, nonce, freshnessproof, my
 
     @memoizable
 
-    @precondition `recipient_id' must be an id.: idlib.is_sloppy_id(recipient_id): "recipient_id: %s" % hr(recipient_id)
-    @precondition `nonce' must be an id.: idlib.is_sloppy_id(nonce): "nonce: %s" % hr(nonce)
-    @precondition `freshnessproof' must be `None' or a binary id.: (freshnessproof is None) or (idlib.is_binary_id(freshnessproof, 'msg')): "freshnessproof: %s" % hr(freshnessproof)
+    @precondition `recipient_id' must be an id.: idlib.is_sloppy_id(recipient_id): "recipient_id: %s" % humanreadable.hr(recipient_id)
+    @precondition `nonce' must be an id.: idlib.is_sloppy_id(nonce): "nonce: %s" % humanreadable.hr(nonce)
+    @precondition `freshnessproof' must be `None' or a binary id.: (freshnessproof is None) or (idlib.is_binary_id(freshnessproof, 'msg')): "freshnessproof: %s" % humanreadable.hr(freshnessproof)
     """
-    assert idlib.is_sloppy_id(recipient_id), "precondition: `recipient_id' must be an id." + " -- " + "recipient_id: %s" % hr(recipient_id)
-    assert idlib.is_sloppy_id(nonce), "precondition: `nonce' must be an id." + " -- " + "nonce: %s" % hr(nonce)
-    assert (freshnessproof is None) or (idlib.is_binary_id(freshnessproof, 'msg')), "precondition: `freshnessproof' must be `None' or a binary id." + " -- " + "freshnessproof: %s" % hr(freshnessproof)
+    assert idlib.is_sloppy_id(recipient_id), "precondition: `recipient_id' must be an id." + " -- " + "recipient_id: %s" % humanreadable.hr(recipient_id)
+    assert idlib.is_sloppy_id(nonce), "precondition: `nonce' must be an id." + " -- " + "nonce: %s" % humanreadable.hr(nonce)
+    assert (freshnessproof is None) or (idlib.is_binary_id(freshnessproof, 'msg')), "precondition: `freshnessproof' must be `None' or a binary id." + " -- " + "freshnessproof: %s" % humanreadable.hr(freshnessproof)
 
     recipient_id = idlib.sloppy_id_to_bare_binary_id(recipient_id)
     nonce = idlib.sloppy_id_to_bare_binary_id(nonce)
@@ -268,11 +268,11 @@ def makeResponseMessage(msgtype, msgbody, reference, freshnessproof, mymetainfo=
 
     @memoizable
 
-    @precondition `reference' must be an id.: idlib.is_sloppy_id(reference): "reference: %s" % hr(reference)
-    @precondition `freshnessproof' must be None or an id.: (freshnessproof is None) or idlib.is_sloppy_id(freshnessproof, 'msg'): "freshnessproof: %s" % hr(freshnessproof)
+    @precondition `reference' must be an id.: idlib.is_sloppy_id(reference): "reference: %s" % humanreadable.hr(reference)
+    @precondition `freshnessproof' must be None or an id.: (freshnessproof is None) or idlib.is_sloppy_id(freshnessproof, 'msg'): "freshnessproof: %s" % humanreadable.hr(freshnessproof)
     """
-    assert idlib.is_sloppy_id(reference), "precondition: `reference' must be an id." + " -- " + "reference: %s" % hr(reference)
-    assert (freshnessproof is None) or idlib.is_sloppy_id(freshnessproof, 'msg'), "precondition: `freshnessproof' must be None or an id." + " -- " + "freshnessproof: %s" % hr(freshnessproof)
+    assert idlib.is_sloppy_id(reference), "precondition: `reference' must be an id." + " -- " + "reference: %s" % humanreadable.hr(reference)
+    assert (freshnessproof is None) or idlib.is_sloppy_id(freshnessproof, 'msg'), "precondition: `freshnessproof' must be None or an id." + " -- " + "freshnessproof: %s" % humanreadable.hr(freshnessproof)
 
     if freshnessproof is not None:
         freshnessproof = idlib.canonicalize(freshnessproof)
@@ -391,7 +391,7 @@ def __internal_checkMsgBody(msgdict):
     templ = OurMessages.templs.get(msgdict['header']['message type'])
 
     if templ is None:
-        debug.stderr.write('NOTE: untemplated message of type %s\n', args=(msgdict['header']['message type'],), v=3, vs='MojoMessage')
+        debugprint('NOTE: untemplated message of type %s\n', args=(msgdict['header']['message type'],), v=3, vs='MojoMessage')
         return
     checkTemplate(msgdict.get('message body'), {
             'mojo message': OptionMarker(templ),

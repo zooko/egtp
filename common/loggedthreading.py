@@ -5,20 +5,21 @@
 #    GNU Lesser General Public License v2.1.
 #    See the file COPYING or visit http://www.gnu.org/ for details.
 #
-__cvsid = '$Id: loggedthreading.py,v 1.1 2002/01/29 20:07:07 zooko Exp $'
+__cvsid = '$Id: loggedthreading.py,v 1.2 2002/02/11 14:47:57 zooko Exp $'
 
 # standard modules
 from threading import *
 import traceback
 
-# our modules
-import debug
+# pyutil modules
+from debugprint import debugprint, debugstream
 
 # remove stuff from our namespace to allow a polite 'from X import *'
 _print_exc = traceback.print_exc
 del traceback
-_debug_mojolog = debug.mojolog
-del debug
+_debugprint = debugprint
+_debugstream = debugstream
+del debugprint, debugstream
 
 
 class LoggedThread(Thread):
@@ -32,8 +33,8 @@ class LoggedThread(Thread):
         try:
             Thread.run(self)
         except:
-            _debug_mojolog.write('Exception in thread \'%s\':\n' % (self.getName(),), vs='ERROR')
-            _print_exc(file=_debug_mojolog)
+            _debugprint('Exception in thread \'%s\':\n' % (self.getName(),), vs='ERROR')
+            _print_exc(file=_debugstream)
 
 
 def test_this():

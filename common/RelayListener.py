@@ -6,12 +6,15 @@
 #    See the file COPYING or visit http://www.gnu.org/ for details.
 #
 
-### standard modules
+# standard modules
 import os
 import traceback
 import types
 
-### our modules
+# pyutil modules
+from debugprint import debugprint
+
+# (old-)EGTP modules
 import CommHints
 from CommHints import HINT_EXPECT_MORE_TRANSACTIONS
 import CommStrat
@@ -21,7 +24,6 @@ import LazySaver
 import MojoMessage
 import OurMessages
 from confutils import confman
-import debug
 import dictutil
 from humanreadable import hr
 import idlib
@@ -131,7 +133,7 @@ class RelayListener(LazySaver.LazySaver):
         """
         assert callable(inmsg_handler_func), "precondition: `inmsg_handler_func' must be callable." + " -- " + "inmsg_handler_func: %s :: %s" % (hr(inmsg_handler_func), hr(type(inmsg_handler_func)),)
 
-        debug.mojolog.write("start_listening()\n", v=1, vs='RelayListener')
+        debugprint("start_listening()\n", v=1, vs='RelayListener')
 
         self._upward_inmsg_handler = inmsg_handler_func
         self._islistening = true
@@ -203,7 +205,7 @@ class RelayListener(LazySaver.LazySaver):
         assert true, "precondition: The `self._preferredrelayers' list has already been adjusted so that the new favorite is in front."
         assert (len(self._preferredrelayers) > 0) and (idlib.is_binary_id(self._preferredrelayers[0])), "precondition: The `self._preferredrelayers' list contains at least one element, which is an id."
 
-        debug.mojolog.write("%s._adopt_new_favorite(): self._preferredrelayers: %s\n", args=(self, self._preferredrelayers,), v=5, vs="RelayListener")
+        debugprint("%s._adopt_new_favorite(): self._preferredrelayers: %s\n", args=(self, self._preferredrelayers,), v=5, vs="RelayListener")
 
         # We've changed our favorite -- the one that we advertise.
 
@@ -222,7 +224,7 @@ class RelayListener(LazySaver.LazySaver):
         best = self._mtm.get_handicapper().pick_best_from_dict(outcome, "are there messages", {})
         assert (best is None) or idlib.is_binary_id(best), "best: %s :: %s" (hr(best), hr(type(best)),)
         if best is None:
-            debug.mojolog.write("Couldn't find any relayers while shopping.  Will try again later...\n", v=2, vs="debug")
+            debugprint("Couldn't find any relayers while shopping.  Will try again later...\n", v=2, vs="debug")
             return
 
         if idlib.equal(oldbest, best):
@@ -291,13 +293,13 @@ class RelayListener(LazySaver.LazySaver):
             if relayerid in self._preferredrelayers:
                 i = self._preferredrelayers.index(relayerid)
                 if i > 0:
-                    debug.mojolog.write("%s._promote_relayer(%s) new rank: %s\n", args=(self, relayerid, i-1,), v=5, vs="RelayListener")
+                    debugprint("%s._promote_relayer(%s) new rank: %s\n", args=(self, relayerid, i-1,), v=5, vs="RelayListener")
                     self._preferredrelayers[i] = self._preferredrelayers[i-1]
                     self._preferredrelayers[i-1] = relayerid
                     if i == 1:
                         self._adopt_new_favorite()
             else:
-                debug.mojolog.write("%s._promote_relayer(%s) new rank: %s\n", args=(self, relayerid, NUM_PREFERRED_RELAYERS/2,), v=5, vs="RelayListener")
+                debugprint("%s._promote_relayer(%s) new rank: %s\n", args=(self, relayerid, NUM_PREFERRED_RELAYERS/2,), v=5, vs="RelayListener")
                 self._preferredrelayers.insert(NUM_PREFERRED_RELAYERS/2, relayerid)
                 del self._preferredrelayers[NUM_PREFERRED_RELAYERS:]
                 if len(self._preferredrelayers) == 1:
@@ -322,7 +324,7 @@ class RelayListener(LazySaver.LazySaver):
         try:
             DataTypes.check_template(outcome, OurMessages.BUNDLED_MESSAGES_TEMPL)
         except MojoMessage.BadFormatError, le:
-            debug.mojolog.write("BadFormatError: %s, stack[-4:]: %s\n", args=(le, traceback.extract_stack()[-4:],), v=0, vs="debug")
+            debugprint("BadFormatError: %s, stack[-4:]: %s\n", args=(le, traceback.extract_stack()[-4:],), v=0, vs="debug")
             raise le
 
         if type(outcome) is types.DictType:

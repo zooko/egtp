@@ -5,14 +5,13 @@
 #    GNU Lesser General Public License v2.1.
 #    See the file COPYING or visit http://www.gnu.org/ for details.
 #
-__cvsid = '$Id: UnreliableHandicapper.py,v 1.1 2002/01/29 20:07:07 zooko Exp $'
+__cvsid = '$Id: UnreliableHandicapper.py,v 1.2 2002/02/11 14:47:57 zooko Exp $'
 
 # standard modules
 import whrandom
 
 # our modules
 import confutils
-import debug
 from humanreadable import hr
 import idlib
 import mojoutil

@@ -6,7 +6,6 @@
 #    See the file COPYING or visit http://www.gnu.org/ for details.
 #
 
-import debug
 import mojostd
 
 from DataTypes import UNIQUE_ID, ASCII_ID, ANY, ASCII_ARMORED_DATA, INTEGER, NON_NEGATIVE_INTEGER, MOD_VAL, INTEGER, ListMarker, OptionMarker, NONEMPTY, NOT_PRESENT, STRING, BOOLEAN

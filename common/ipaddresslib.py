@@ -6,7 +6,7 @@
 #
 # A library for determining the IP addresses of the local machine.
 #
-__cvsid = '$Id: ipaddresslib.py,v 1.1 2002/01/29 20:07:07 zooko Exp $'
+__cvsid = '$Id: ipaddresslib.py,v 1.2 2002/02/11 14:47:57 zooko Exp $'
 
 # standard modules
 import sys
@@ -21,8 +21,10 @@ if sys.platform == 'win32':
     # http://www.activestate.com/Products/ActivePython/win32all.html
     import win32pipe
 
-# our modules
-import debug
+# pyutil modules
+from debugprint import debugprint
+
+# (old-)EGTP modules
 import confutils
 
 class Error(StandardError): pass
@@ -78,7 +80,7 @@ def get_primary_ip_address(nonroutableok) :
     if confutils.confman.dict.get("IP_ADDRESS_OVERRIDE") :
         # use the value from the config file if the user specified one
         address = confutils.confman.dict.get("IP_ADDRESS_OVERRIDE")
-        debug.mojolog.write('IP address override found in config file.  IP: %s\n', args=(address,), vs='ipaddresslib')
+        debugprint('IP address override found in config file.  IP: %s\n', args=(address,), vs='ipaddresslib')
     elif confutils.confman.get("IP_ADDRESS_DETECTOR_HOST"):
         # Playing around with the socket module I stumbled across this method!
         # This will detect the IP address of your network interface that would
@@ -91,13 +93,13 @@ def get_primary_ip_address(nonroutableok) :
             s.connect( (detectorhost, 53) )
             address, ignoredport = s.getsockname()
         except socket.error, se:
-            debug.mojolog.write("Error trying to use %s to detect our IP address: %s (this is normal on win95/98/ME)\n", args=(detectorhost, se), v=2, vs='ipaddresslib')
+            debugprint("Error trying to use %s to detect our IP address: %s (this is normal on win95/98/ME)\n", args=(detectorhost, se), v=2, vs='ipaddresslib')
             address = '0.0.0.0'
         del s
         if address == '0.0.0.0' and confutils.platform == 'win32':   # win98 returns this, the bastard!
             address = read_win32_default_ifaceaddr()
             if not address:
-                debug.mojolog.write("ERROR ipaddresslib couldn't determine your IP address, assuming 127.0.0.1 for testing\n", vs='ipaddresslib')
+                debugprint("ERROR ipaddresslib couldn't determine your IP address, assuming 127.0.0.1 for testing\n", vs='ipaddresslib')
                 address = '127.0.0.1'
     # cause the platform specific ugly method to be used when our the above method fails.
     if address != '0.0.0.0':
@@ -107,14 +109,14 @@ def get_primary_ip_address(nonroutableok) :
         default_iface = get_linux_default_iface()
 
         if not default_iface or not ifacedict.has_key(default_iface) :
-            debug.mojolog.write("ERROR ipaddresslib couldn't determine your IP address, assuming 127.0.0.1 for testing\n", vs='ipaddresslib')
+            debugprint("ERROR ipaddresslib couldn't determine your IP address, assuming 127.0.0.1 for testing\n", vs='ipaddresslib')
             address = '127.0.0.1'
         else :
             address = ifacedict[default_iface]
     elif confutils.platform == 'win32' :
         addr = read_win32_default_ifaceaddr()
         if not addr :
-            debug.mojolog.write("ERROR ipaddresslib couldn't determine your IP address, assuming 127.0.0.1 for testing\n", vs='ipaddresslib')
+            debugprint("ERROR ipaddresslib couldn't determine your IP address, assuming 127.0.0.1 for testing\n", vs='ipaddresslib')
             address = '127.0.0.1'
         else :
             address = addr
@@ -123,7 +125,7 @@ def get_primary_ip_address(nonroutableok) :
         default_iface = get_netbsd_default_iface()
 
         if not default_iface or not ifacedict.has_key(default_iface) :
-            debug.mojolog.write("ERROR ipaddresslib couldn't determine your IP address, assuming 127.0.0.1 for testing\n", vs='ipaddresslib')
+            debugprint("ERROR ipaddresslib couldn't determine your IP address, assuming 127.0.0.1 for testing\n", vs='ipaddresslib')
             address = '127.0.0.1'
         else :
             address = ifacedict[default_iface]
@@ -132,7 +134,7 @@ def get_primary_ip_address(nonroutableok) :
         default_iface = get_netbsd_default_iface(netstat_path=__darwin_netstat_path)
 
         if not default_iface or not ifacedict.has_key(default_iface) :
-            debug.mojolog.write("ERROR ipaddresslib couldn't determine your IP address, assuming 127.0.0.1 for testing\n", vs='ipaddresslib')
+            debugprint("ERROR ipaddresslib couldn't determine your IP address, assuming 127.0.0.1 for testing\n", vs='ipaddresslib')
             address = '127.0.0.1'
         else :
             address = ifacedict[default_iface]
@@ -141,16 +143,16 @@ def get_primary_ip_address(nonroutableok) :
         default_iface = get_irix_default_iface()
 
         if not default_iface or not ifacedict.has_key(default_iface) :
-            debug.mojolog.write("ERROR ipaddresslib couldn't determine your IP address, assuming 127.0.0.1 for testing\n", vs='ipaddresslib')
+            debugprint("ERROR ipaddresslib couldn't determine your IP address, assuming 127.0.0.1 for testing\n", vs='ipaddresslib')
             address = '127.0.0.1'
         else :
             address = ifacedict[default_iface]
     else :
-        debug.mojolog.write('ERROR ipaddresslib unsupported os: '+sys.platform)
+        debugprint('ERROR ipaddresslib unsupported os: '+sys.platform)
         if not forced_address :
             raise RuntimeError, "unsupported OS in ipaddresslib and IP_ADDRESS_OVERRIDE not configured"
 
-    debug.mojolog.write("I think your IP Address is " + address + "\n", v=3, vs='ipaddresslib')
+    debugprint("I think your IP Address is " + address + "\n", v=3, vs='ipaddresslib')
 
     if (not nonroutableok) and (not is_routable(address)):
         raise NonRoutableIPError
@@ -257,8 +259,8 @@ def read_win32_default_ifaceaddr(warninglogged_boolean=[]):
         return _route_read_win32_default_ifaceaddr()
     else:
         if not warninglogged_boolean:
-            debug.mojolog.write("NOTE: if the broker incorrectly determines your IP address try\n", v=1, vs='ipaddresslib')
-            debug.mojolog.write("editing config/broker/broker.conf and set USE_ROUTE_TO_GET_WIN32_IPADDR: yes\n", v=1, vs='ipaddresslib')
+            debugprint("NOTE: if the broker incorrectly determines your IP address try\n", v=1, vs='ipaddresslib')
+            debugprint("editing config/broker/broker.conf and set USE_ROUTE_TO_GET_WIN32_IPADDR: yes\n", v=1, vs='ipaddresslib')
             warninglogged_boolean.append(1)
         return _hostname_read_win32_default_ifaceaddr()
 
@@ -268,7 +270,7 @@ def _hostname_read_win32_default_ifaceaddr() :
         myhostname = socket.gethostname()
         myipaddress = socket.gethostbyname(myhostname)
     except socket.error, e:
-        debug.mojolog.write('WARNING: could not obtain IP address for your machine.\n', v=1, vs="ipaddresslib.win32")
+        debugprint('WARNING: could not obtain IP address for your machine.\n', v=1, vs="ipaddresslib.win32")
         return "127.0.0.1"  # unknown IP address, return localhost
     return myipaddress
 
@@ -278,7 +280,7 @@ def _route_read_win32_default_ifaceaddr() :
     try:
         route_output = win32pipe.popen(__win32_route_path + ' print 0.0.0.0').read()
     except:
-        debug.mojolog.write('WARNING: win32pipe.popen() failed reverting to os.popen() to call ROUTE to obtain IP address\n', vs='ipaddresslib.win32')
+        debugprint('WARNING: win32pipe.popen() failed reverting to os.popen() to call ROUTE to obtain IP address\n', vs='ipaddresslib.win32')
         route_output = os.popen(__win32_route_path + ' print 0.0.0.0').read()
     def_route_re = re.compile('^\s*0\.0\.0\.0\s.+\s(?P<address>\d+\.\d+\.\d+\.\d+)\s+(?P<metric>\d+)\s*$', flags=re.M|re.I|re.S)
 

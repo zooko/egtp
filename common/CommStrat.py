@@ -14,11 +14,11 @@ import types
 
 # pyutil modules
 from config import DEBUG_MODE
+from debugprint import debugprint
 
 # our modules
 import DataTypes
 import OurMessages
-import debug
 import idlib
 
 # Mojo Nation modules
@@ -195,7 +195,7 @@ class TCP(CommStrat):
         """
         assert idlib.is_binary_id(self._broker_id), "precondition: `self._broker_id' must be an id." + " -- " + "self._broker_id: %s :: %s" % (hr(self._broker_id), hr(type(self._broker_id)),)
 
-        # debug.mojolog.write("%s.send(): self._broker_id: %s\n", args=(self, self._broker_id,))
+        # debugprint("%s.send(): self._broker_id: %s\n", args=(self, self._broker_id,))
         self._tcpch.send_msg(self._broker_id, msg=msg, hint=hint, fast_fail_handler=fast_fail_handler)
 
     def is_routeable(self):
@@ -301,11 +301,11 @@ class Relay(CommStrat):
             return
 
         if idlib.equal(self._relayer_id, self._broker_id):
-            debug.mojolog.write("Warning: we have gotten the idea that the comm strat for sending messages to %s is to relay through herself!  CommStrat.Relay: %s\n", args=(self._broker_id, self,), v=2, vs="debug")
+            debugprint("Warning: we have gotten the idea that the comm strat for sending messages to %s is to relay through herself!  CommStrat.Relay: %s\n", args=(self._broker_id, self,), v=2, vs="debug")
             fast_fail_handler(failure_reason="aborting a recursive `pass this along' to %s via herself" % hr(self._relayer_id,))
             return
 
-        # debug.mojolog.write("commstratseqno: %s, self._commstratseqno: %s\n", args=(commstratseqno, self._commstratseqno,))
+        # debugprint("commstratseqno: %s, self._commstratseqno: %s\n", args=(commstratseqno, self._commstratseqno,))
         if (commstratseqno is not None) and ((self._commstratseqno is None) or (commstratseqno >= self._commstratseqno)):
             # This message is not guaranteed to terminate -- it could form a remailing loop -- dump it.
             fast_fail_handler(failure_reason="aborting a non-guaranteed-termination relay; commstratseqno: %s, self._commstratseqno: %s" % (hr(commstratseqno),  hr(self._commstratseqno),))
@@ -324,14 +324,14 @@ class Relay(CommStrat):
 
         def outcome_func_from_pass_this_along(widget, outcome, failure_reason=None, self=self, msg=msg):
             assert idlib.equal(widget.get_counterparty_id(), self._relayer_id)
-            # debug.mojolog.write("CommStrat.Relay: Got result of `pass this along'.  self._relayer_id: %s, widget: %s, outcome: %s, failure_reason: %s\n", args=(self._relayer_id, widget, outcome, failure_reason,), v=3, vs="commstrats")
+            # debugprint("CommStrat.Relay: Got result of `pass this along'.  self._relayer_id: %s, widget: %s, outcome: %s, failure_reason: %s\n", args=(self._relayer_id, widget, outcome, failure_reason,), v=3, vs="commstrats")
             if failure_reason:
                 self._mtm.forget_comm_strategy(self._broker_id, idlib.make_id(msg, 'msg'), outcome=outcome, failure_reason="couldn't contact relay server: %s" % hr(outcome))
             if (not failure_reason) and (outcome.get('result') != "ok") and (outcome.get('result') != "success"):
                 # Note: `ok' is for backwards compatibility, `success' is preferred.
                 self._mtm.forget_comm_strategy(self._broker_id, idlib.make_id(msg, 'msg'), outcome=outcome, failure_reason="got failure from relay server: %s" % hr(outcome))
 
-        # debug.mojolog.write("CommStrat.Relay: Initiating `pass this along'...  self._relayer_id: %s\n", args=(self._relayer_id,), v=3, vs="commstrats")
+        # debugprint("CommStrat.Relay: Initiating `pass this along'...  self._relayer_id: %s\n", args=(self._relayer_id,), v=3, vs="commstrats")
 
         self._mtm.initiate(self._relayer_id, 'pass this along v2', wrappermsgbody, outcome_func=outcome_func_from_pass_this_along, post_timeout_outcome_func=outcome_func_from_pass_this_along, commstratseqno=self._commstratseqno)
         self._been_used = 1
@@ -366,7 +366,7 @@ class Crypto(CommStrat):
 
         @return `true' iff `self' and `other' are actually the same strategy
         """
-        # debug.mojolog.write("%s.same(%s); stack: %s\n", args=(self, other, traceback.extract_stack(),))
+        # debugprint("%s.same(%s); stack: %s\n", args=(self, other, traceback.extract_stack(),))
         if not hasattr(other, '_pubkey'):
             assert hasattr(self, '_pubkey')
             return false

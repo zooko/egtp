@@ -6,7 +6,7 @@
 #    See the file COPYING or visit http://www.gnu.org/ for details.
 #
 
-### standard modules
+# standard modules
 import modval
 import xdrlib
 from xdrlib import Packer,Unpacker
@@ -21,14 +21,16 @@ import os
 import time
 import types
 
-### our modules
+# pyutil modules
+from debugprint import debugprint
+
+# (old-)EGTP modules
 import Cache
 from CleanLogDb import CleanLogDbEnv
 import HashRandom
 import MojoKey
 import confutils
 import cryptutil
-import debug
 import fileutil
 from humanreadable import hr
 import idlib
@@ -98,7 +100,7 @@ class SessionKeeper:
             self.counterparty_map = counterparty_map
 
         def __del__(self):
-            debug.mojolog.write("%s.__del__()\n", args=(self,))
+            debugprint("%s.__del__()\n", args=(self,))
             if self.session_map is not None :
                 self.session_map.close()
                 self.session_map = None
@@ -135,7 +137,7 @@ class SessionKeeper:
         assert ((dbparentdir is not None) and (dir is None)) or ((dbparentdir is None) and (dir is not None)), "precondition: Exactly one of (dbparentdir, dir) must be not None." + " -- " + "dbparentdir: %s, dir: %s" % (hr(dbparentdir), hr(dir))
 
         if serialized:
-            debug.stderr.write("COMPLAINT: passing in serialized secret keys is the old-style, just-a-hack-for-debug way of doing things.  You really want to just give me the directory to start from and I'll get the secret key stored in there in a file.\n", v=3)
+            debugprint("COMPLAINT: passing in serialized secret keys is the old-style, just-a-hack-for-debug way of doing things.  You really want to just give me the directory to start from and I'll get the secret key stored in there in a file.\n", v=3)
 
         if dir:
             # The dbdir is under dir and named "mesgen".
@@ -187,11 +189,11 @@ class SessionKeeper:
         try:
             db_env.open(self._dbdir, db.DB_CREATE | db.DB_INIT_MPOOL | db.DB_INIT_LOCK | db.DB_THREAD | db.DB_INIT_LOG | db.DB_INIT_TXN | privateflag | recoverflag)
         except db.DBError, dbe:
-            debug.mojolog.write('Failed to open the database environment the first time, reason: %s\nTrying again...\n', args=(dbe,), vs='mesgen', v=2)
+            debugprint('Failed to open the database environment the first time, reason: %s\nTrying again...\n', args=(dbe,), vs='mesgen', v=2)
             try:
                 db_env.open(self._dbdir, db.DB_CREATE | db.DB_INIT_MPOOL | db.DB_INIT_LOCK | db.DB_THREAD | db.DB_INIT_LOG | db.DB_INIT_TXN | privateflag | recoverflag | db.DB_RECOVER)
             except db.DBError, dbe:
-                debug.mojolog.write('Failed to open the database environment the second time, reason: %s\nTrying again...\n', args=(dbe,), vs='mesgen', v=2)
+                debugprint('Failed to open the database environment the second time, reason: %s\nTrying again...\n', args=(dbe,), vs='mesgen', v=2)
                 # XXX DOUBLE CHOCOLATEY HACK sometimes trying *again* after one open *without* DB_RECOVER works.
                 db_env.open(self._dbdir, db.DB_CREATE | db.DB_INIT_MPOOL | db.DB_INIT_LOCK | db.DB_THREAD | db.DB_INIT_LOG | db.DB_INIT_TXN | privateflag | recoverflag & (~db.DB_RECOVER))
 
@@ -331,7 +333,7 @@ class SessionKeeper:
             signature = u.unpack_fstring(len(sender_key))
             u.done()
             
-            # debug.stderr.write("------ ------ ------ ------ hmachish(key=%s, message=%s)\n" % (`symmetric_key`, `end`))
+            # debugprint("------ ------ ------ ------ hmachish(key=%s, message=%s)\n" % (`symmetric_key`, `end`))
             summary = cryptutil.hmacish(key=symmetric_key, message=end)
             
             x = modval.new(sender_key, HARDCODED_RSA_PUBLIC_EXPONENT, signature)
@@ -381,7 +383,7 @@ class SessionKeeper:
                 if trans is not None:
                     trans.abort()
         except (modval.Error, tripledescbc.Error, xdrlib.Error, EOFError), le:
-            debug.mojolog.write("got error in mesgen.__parse_header(): %s", args=(le,), v=4, vs="debug")
+            debugprint("got error in mesgen.__parse_header(): %s", args=(le,), v=4, vs="debug")
             raise Error, le
 
     def store_key(self, full_key):
@@ -431,7 +433,7 @@ class SessionKeeper:
             penc.pack_fstring(SIZE_OF_UNIQS, id_in_rep)
             penc.pack_fstring(SIZE_OF_UNIQS, key_seed)
 
-            # debug.stderr.write("------ ------ ------ ------ hmachish(key=%s, message=%s)\n" % (`symmetric_key`, `penc.get_buffer()`))
+            # debugprint("------ ------ ------ ------ hmachish(key=%s, message=%s)\n" % (`symmetric_key`, `penc.get_buffer()`))
             hashie = cryptutil.hmacish(key=symmetric_key, message=penc.get_buffer())
 
             paddedhashie = '\000' + cryptutil.oaep(hashie, len(self.__key.get_modulus()) - 1) # The prepended 0 byte is to make modval happy.
@@ -531,7 +533,7 @@ class SessionKeeper:
             stored_session_id_out = loads(self.extres.counterparty_map.get(counterparty_id, (None,None,None,None)))[1]
         except:
             stored_session_id_out = None
-        debug.mojolog.write("__invalidate_session for unverified cid %s, bad_session_id_out %s, stored_session_id_out %s\n", args=(counterparty_id, bad_session_id_out, stored_session_id_out), v=4, vs='mesgen')
+        debugprint("__invalidate_session for unverified cid %s, bad_session_id_out %s, stored_session_id_out %s\n", args=(counterparty_id, bad_session_id_out, stored_session_id_out), v=4, vs='mesgen')
         if idlib.equal(stored_session_id_out, bad_session_id_out):
             self.extres.counterparty_map.delete(counterparty_id)
         else:
@@ -628,7 +630,7 @@ class MessageMaker:
             p.pack_fstring(4, '\000\000\000\001')
             p.pack_fstring(SIZE_OF_UNIQS, connect_info['session_id_out'])
         else:
-            #debug.mojolog.write('including full header on message to %s\n', args=(recipient_id,), vs='mesgen') # XXX verbose
+            #debugprint('including full header on message to %s\n', args=(recipient_id,), vs='mesgen') # XXX verbose
             p.pack_fstring(4, '\000\000\000\000')
             p.pack_string(connect_info['header'])
 
@@ -637,7 +639,7 @@ class MessageMaker:
         pdec = Packer()
         pdec.pack_string(message)
 
-        # debug.stderr.write("------ ------ ------ ------ hmachish(key=%s, message=%s)\n" % (`symmetric_key`, `message`))
+        # debugprint("------ ------ ------ ------ hmachish(key=%s, message=%s)\n" % (`symmetric_key`, `message`))
         mac = cryptutil.hmacish(key=symmetric_key, message=message)
 
         pdec.pack_fstring(SIZE_OF_UNIQS, mac)
@@ -676,7 +678,7 @@ class MessageMaker:
                 mac = u.unpack_fstring(SIZE_OF_UNIQS)
                 u.done()
                 
-                # debug.stderr.write("------ ------ ------ ------ hmachish(key=%s, message=%s)\n" % (`symmetric_key`, `message`))
+                # debugprint("------ ------ ------ ------ hmachish(key=%s, message=%s)\n" % (`symmetric_key`, `message`))
                 maccomp = cryptutil.hmacish(key=symmetric_key, message=message)
 
                 if mac != maccomp:
@@ -699,7 +701,7 @@ class MessageMaker:
 
                 counterparty_id = idlib.make_id(counterparty_pub_key_sexp, 'broker')
 
-                # debug.stderr.write("------ ------ ------ ------ hmachish(key=%s, message=%s)\n" % (`symmetric_key`, `message`))
+                # debugprint("------ ------ ------ ------ hmachish(key=%s, message=%s)\n" % (`symmetric_key`, `message`))
                 maccomp = cryptutil.hmacish(key=symmetric_key, message=message)
                 if mac != maccomp:
                     raise Error, 'incorrect MAC'
@@ -714,7 +716,7 @@ class MessageMaker:
             else:
                 raise Error, 'unsupported message type'
         except (modval.Error, tripledescbc.Error, xdrlib.Error, EOFError), le:
-            debug.mojolog.write("got error in mesgen.parse(): %s", args=(le,), v=4, vs="debug")
+            debugprint("got error in mesgen.parse(): %s", args=(le,), v=4, vs="debug")
             if session is not None:
                 raise UnknownSession(session, self.get_id())
             else:

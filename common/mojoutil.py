@@ -6,8 +6,7 @@
 #    See the file COPYING or visit http://www.gnu.org/ for details.
 #
 
-### Imports:
-# Standard Modules:
+# standard modules
 import binascii
 import copy
 import math
@@ -29,21 +28,23 @@ import whrandom
 import random
 import zlib
 
-# In-House Modules:
-import debug
+# pyutil modules
 from humanreadable import hr
+from debugprint import debugprint
+
+# old-EGTP modules
 from confutils import confman
 
 try:
     import trace
 except ImportError, le:
-    debug.mojolog.write("ignoring failure to import trace. le: %s\n", args=(le,), v=6, vs="debug")
+    debugprint("ignoring failure to import trace. le: %s\n", args=(le,), v=6, vs="debug")
     pass
 
 try:
     import coverage
 except ImportError, le:
-    debug.mojolog.write("ignoring failure to import coverage. le: %s\n", args=(le,), v=6, vs="debug")
+    debugprint("ignoring failure to import coverage. le: %s\n", args=(le,), v=6, vs="debug")
     pass
 
 # Backwards-compatible names.
@@ -635,17 +636,17 @@ def doit(func):
 def coverageit(func):
     global tracedone
     tracedone.clear()
-    debug.mojolog.write("xxxxxxxxxxxxxxxxxxxx %s\n", args=(func,), v=0, vs="debug")
+    debugprint("xxxxxxxxxxxxxxxxxxxx %s\n", args=(func,), v=0, vs="debug")
     coverage.the_coverage.start()
     # run the new command using the given trace
     try:
         result = apply(func)
-        debug.mojolog.write("yyyyyyyyyyyyyyyyyyyy %s\n", args=(func,), v=0, vs="debug")
+        debugprint("yyyyyyyyyyyyyyyyyyyy %s\n", args=(func,), v=0, vs="debug")
     finally:
         coverage.the_coverage.stop()
         tmpfname = tempfile.mktemp() + hr(func)
 
-        debug.mojolog.write("zzzzzzzzzzzzzzzzzzzz %s\n", args=(func,), v=0, vs="debug")
+        debugprint("zzzzzzzzzzzzzzzzzzzz %s\n", args=(func,), v=0, vs="debug")
 
         # make a report, telling it where you want output
         res = coverage.the_coverage.analysis('/home/zooko/playground/evil-SF-unstable/common/MojoTransaction.py')
@@ -657,16 +658,16 @@ def coverageit(func):
 def traceorcountit(func, dotrace, docount, countfuncs):
     global tracedone
     tracedone.clear()
-    debug.mojolog.write("xxxxxxxxxxxxxxxxxxxx %s, countfuncs: %s\n", args=(func, countfuncs,), v=0, vs="debug")
+    debugprint("xxxxxxxxxxxxxxxxxxxx %s, countfuncs: %s\n", args=(func, countfuncs,), v=0, vs="debug")
     t = trace.Trace(trace=dotrace, count=docount, countfuncs=countfuncs, infile="/tmp/trace", outfile="/tmp/trace", ignoredirs=(sys.prefix, sys.exec_prefix,))
     # run the new command using the given trace
     try:
         result = t.runfunc(func)
-        debug.mojolog.write("yyyyyyyyyyyyyyyyyyyy %s\n", args=(func,), v=0, vs="debug")
+        debugprint("yyyyyyyyyyyyyyyyyyyy %s\n", args=(func,), v=0, vs="debug")
     finally:
         tmpfname = tempfile.mktemp() + hr(func)
 
-        debug.mojolog.write("zzzzzzzzzzzzzzzzzzzz %s\n", args=(func,), v=0, vs="debug")
+        debugprint("zzzzzzzzzzzzzzzzzzzz %s\n", args=(func,), v=0, vs="debug")
 
         # make a report, telling it where you want output
         t.results().write_results(show_missing=1)
@@ -689,13 +690,13 @@ def _dont_enable_if_you_want_speed_profit(func):
     result = None
     p = profile.Profile()
     try:
-        debug.mojolog.write("xxxxxxxxxxxxxxxxxxxx %s\n", args=(func,), v=0, vs="debug")
+        debugprint("xxxxxxxxxxxxxxxxxxxx %s\n", args=(func,), v=0, vs="debug")
         result = p.runcall(func)
-        debug.mojolog.write("yyyyyyyyyyyyyyyyyyyy %s\n", args=(func,), v=0, vs="debug")
+        debugprint("yyyyyyyyyyyyyyyyyyyy %s\n", args=(func,), v=0, vs="debug")
     finally:
         tmpfname = tempfile.mktemp() + hr(func)
 
-        debug.mojolog.write("zzzzzzzzzzzzzzzzzzzz %s\n", args=(tmpfname,), v=0, vs="debug")
+        debugprint("zzzzzzzzzzzzzzzzzzzz %s\n", args=(tmpfname,), v=0, vs="debug")
 
         p.dump_stats(tmpfname)
         p = None
@@ -751,7 +752,7 @@ def callback_wrapper(func, args=(), kwargs={}, defaultreturnval=None):
     @param defaultreturnval if `func' is None, then this will be returned;  You probably want `None'.
     """
 ##    if int(confman.dict['MAX_VERBOSITY']) >= 22:   # because traceback.extract_stack() is slow
-##        debug.mojolog.write("DEBUG: about to call wrapped method: %s(%s, %s) from %s\n", args=(func, args, kwargs, traceback.extract_stack()), v=22, vs="debug")
+##        debugprint("DEBUG: about to call wrapped method: %s(%s, %s) from %s\n", args=(func, args, kwargs, traceback.extract_stack()), v=22, vs="debug")
 ##        # really, really, egregiously verbose.  Use this if you basically want a log containing a substantial fraction of all function calls made during the course of the program.  --Zooko 2000-10-08 ### for faster operation, comment this line out.  --Zooko 2000-12-11 ### for faster operation, comment this line out.  --Zooko 2000-12-11
 
     if (not func):
@@ -761,11 +762,11 @@ def callback_wrapper(func, args=(), kwargs={}, defaultreturnval=None):
     try:
         return apply(func, args, kwargs)
     except TypeError, description:
-        debug.mojolog.write('got a TypeError, func was %s, args was %s, kwargs was %s\n' % (`func`, `args`, `kwargs`))
+        debugprint('got a TypeError, func was %s, args was %s, kwargs was %s\n' % (`func`, `args`, `kwargs`))
         raise
 ##    finally:
 ##        if int(confman.dict['MAX_VERBOSITY']) >= 23:   # because traceback.extract_stack() is slow
-##            debug.mojolog.write("DEBUG: done calling wrapped method: %s(%s, %s) from %s\n", args=(func, args, kwargs, traceback.extract_stack()), v=23, vs="debug")
+##            debugprint("DEBUG: done calling wrapped method: %s(%s, %s) from %s\n", args=(func, args, kwargs, traceback.extract_stack()), v=23, vs="debug")
 ##            # really, really, egregiously verbose.  Use this if you basically want a log containing a substantial fraction of all function calls made during the course of the program.  --Zooko 2000-10-08 ### for faster operation, comment this line out.  --Zooko 2000-12-11
 
 def _cb_warper(icb=None):

@@ -13,10 +13,10 @@
 # us, their reputation for coming through with their deals in our eyes,
 # etc.
 #
-__cvsid = '$Id: counterparties.py,v 1.2 2002/02/11 00:03:26 zooko Exp $'
+__cvsid = '$Id: counterparties.py,v 1.3 2002/02/11 14:47:57 zooko Exp $'
 
 
-# Standard Modules:
+# standard modules
 from cPickle import dumps, loads, UnpicklingError
 import os
 import threading
@@ -25,23 +25,25 @@ import traceback
 import types
 import math
 
+# pyutil modules
+import DoQ
+from debugprint import debugprint
+from humanreadable import hr
+
 # Our Modules:
 import Cache
 from CleanLogDb import CleanLogDbEnv
-import DoQ
-true = 1
-false = None
 from bsddb3 import db, dbobj
 import confutils
 from confutils import confman
-import debug
 import fileutil
-from humanreadable import hr
 import idlib
 import mojoutil
 from mojoutil import setdefault
 import mojosixbit
 
+true = 1
+false = None
 
 
 class CounterpartyObjectKeeper:
@@ -54,7 +56,7 @@ class CounterpartyObjectKeeper:
             self.balances_db = balances_db
 
         def __del__(self):
-            debug.mojolog.write("%s.__del__(); stack[-6:-1]: %s\n", args=(self, traceback.extract_stack()[-6:-1],), v=5, vs="debug")
+            debugprint("%s.__del__(); stack[-6:-1]: %s\n", args=(self, traceback.extract_stack()[-6:-1],), v=5, vs="debug")
             if self.balances_db is not None :
                 self.balances_db.close()
                 self.balances_db = None
@@ -91,11 +93,11 @@ class CounterpartyObjectKeeper:
             db_env.open(dbdir, db.DB_CREATE | db.DB_INIT_MPOOL | db.DB_INIT_LOCK | db.DB_THREAD | db.DB_INIT_LOG | db.DB_INIT_TXN | privateflag | recoverflag)
         except db.DBError, dbe:
             # XXX HACK: sometimes trying again after one recover works
-            debug.mojolog.write('Failed to open the database environment the first time, reason: %s\nTrying again...\n', args=(dbe,), vs='CounterpartyObjectKeeper', v=2)
+            debugprint('Failed to open the database environment the first time, reason: %s\nTrying again...\n', args=(dbe,), vs='CounterpartyObjectKeeper', v=2)
             try:
                 db_env.open(dbdir, db.DB_CREATE | db.DB_INIT_MPOOL | db.DB_INIT_LOCK | db.DB_THREAD | db.DB_INIT_LOG | db.DB_INIT_TXN | db.DB_TXN_NOSYNC | privateflag | recoverflag | db.DB_RECOVER)
             except db.DBError, dbe:
-                debug.mojolog.write('Failed to open the database environment the second time, reason: %s\nTrying again...\n', args=(dbe,), vs='CounterpartyObjectKeeper', v=2)
+                debugprint('Failed to open the database environment the second time, reason: %s\nTrying again...\n', args=(dbe,), vs='CounterpartyObjectKeeper', v=2)
                 # XXX DOUBLE CHOCOLATEY HACK sometimes trying *again* after one open *without* DB_RECOVER works.
                 db_env.open(dbdir, db.DB_CREATE | db.DB_INIT_MPOOL | db.DB_INIT_LOCK | db.DB_THREAD | db.DB_INIT_LOG | db.DB_INIT_TXN | db.DB_TXN_NOSYNC | privateflag | recoverflag & (~db.DB_RECOVER))
 
@@ -160,7 +162,7 @@ class CounterpartyObjectKeeper:
         Called from the constructor.  This looks through the database
         to determine how much we owe or are owed by others initially.
         """
-        # debug.mojolog.write("xxx %s.load_mojooffer_stats() stack[-5:-1]: %s\n", args=(self, traceback.extract_stack()[-5:-1],))
+        # debugprint("xxx %s.load_mojooffer_stats() stack[-5:-1]: %s\n", args=(self, traceback.extract_stack()[-5:-1],))
         others_owe_us = 0L
         we_owe_others = 0L
         for countarparty_id in self.extres.balances_db.keys() :
@@ -224,7 +226,7 @@ class CounterpartyObject :
         def __init__(self):
             pass
         def __del__(self):
-            debug.mojolog.write("%s.__del__(); stack[-6:-1]: %s\n", args=(self, traceback.extract_stack()[-6:-1],), v=5, vs="debug")
+            debugprint("%s.__del__(); stack[-6:-1]: %s\n", args=(self, traceback.extract_stack()[-6:-1],), v=5, vs="debug")
 
     def __init__(self, counterparty_id, keeper) :
         """
@@ -232,7 +234,7 @@ class CounterpartyObject :
         """
         assert idlib.is_sloppy_id(counterparty_id), "`counterparty_id' must be an id." + " -- " + "counterparty_id: %s" % hr(counterparty_id)
 
-        debug.mojolog.write("%s.__init_(); stack[-6:-1]: %s\n", args=(self, traceback.extract_stack()[-6:-1],), v=5, vs="debug")
+        debugprint("%s.__init_(); stack[-6:-1]: %s\n", args=(self, traceback.extract_stack()[-6:-1],), v=5, vs="debug")
 
         self.extres = CounterpartyObject.ExtRes()
 
@@ -252,7 +254,7 @@ class CounterpartyObject :
         self._tempawfdelta = 0 # This is used to give a cp a temporary increase which is never written to the persistent db.  (For fast deposits.)
 
         self._load_from_db()
-        # debug.mojolog.write("xxx %s.__init__() stack[-5:-1]: %s\n", args=(self, traceback.extract_stack()[-5:-1],))
+        # debugprint("xxx %s.__init__() stack[-5:-1]: %s\n", args=(self, traceback.extract_stack()[-5:-1],))
 
     def __repr__(self):
         return "<%s:%s, %x>" % (self.__class__.__name__, hr(self._counterparty_id), id(self),)
@@ -262,14 +264,14 @@ class CounterpartyObject :
         theseargs.extend(list(args))
         if reasonstr:
             reasonstr = " [reason: " + reasonstr + "]"
-        debug.mojolog.write("accounting with %s: " + str + reasonstr + "\n", args=theseargs, v=v, vs=vs)
+        debugprint("accounting with %s: " + str + reasonstr + "\n", args=theseargs, v=v, vs=vs)
 
     def _load_from_db(self) :
         """called internally to init the internal variables from the database"""
         try:
             stored = self.keeper.extres.balances_db.get(self._counterparty_id)
         except db.DBError, le:
-            debug.mojolog.write("Got error from counterparties db.  Initializing counterparty history to defaults.  counterparty_id: %s, txn: %s, dbflags: %s, le: %s\n", args=(self._counterparty_id, txn, dbflags, le,), v=0, vs="warning")
+            debugprint("Got error from counterparties db.  Initializing counterparty history to defaults.  counterparty_id: %s, txn: %s, dbflags: %s, le: %s\n", args=(self._counterparty_id, txn, dbflags, le,), v=0, vs="warning")
             stored = None
 
         if stored is None :
@@ -278,7 +280,7 @@ class CounterpartyObject :
             try:
                 dict = loads(stored)
             except (UnpicklingError, ValueError,), le:
-                debug.mojolog.write("Got error loading counterparties db.  ignoring: %s\n", args=(le,), v=0, vs="warning")
+                debugprint("Got error loading counterparties db.  ignoring: %s\n", args=(le,), v=0, vs="warning")
                 dict = {}
 
         # Set _every_ counterparty's AWF to the current DEFAULT_AMOUNT_WILL_FRONT_v3.
@@ -308,7 +310,7 @@ class CounterpartyObject :
         assert hasattr(self, 'trans') and (self.trans is None), 'should only call synch once per transaction self: %s, self.__dict__: %s' % (hr(self), hr(self.__dict__))
         self.keeper.extres.db_env.nosyncerror_txn_checkpoint(10)
         self.trans = self.keeper.extres.db_env.txn_begin()
-        # debug.mojolog.write("xxx %s.synch() stack[-5:-1]: %s\n", args=(self, traceback.extract_stack()[-5:-1],))
+        # debugprint("xxx %s.synch() stack[-5:-1]: %s\n", args=(self, traceback.extract_stack()[-5:-1],))
 
     def save(self, checkpoint=false) :
         assert self.trans is not None, 'should only call save() once'
@@ -317,7 +319,7 @@ class CounterpartyObject :
         try:
             self.keeper.extres.balances_db.put(self._counterparty_id, newval, txn=self.trans)
         except db.DBError, le:
-            debug.mojolog.write("Got error from counterparties db trying to save.  Ignoring.  counterparty_id: %s, vals: %s, le: %s\n", args=(self._counterparty_id, self.vals, le,), v=0, vs="warning")
+            debugprint("Got error from counterparties db trying to save.  Ignoring.  counterparty_id: %s, vals: %s, le: %s\n", args=(self._counterparty_id, self.vals, le,), v=0, vs="warning")
 
         self.trans.commit()
         self.trans = None

@@ -10,20 +10,21 @@
 #
 # BirthDate: 2000-06-08
 # CVS:
-__cvsid = '$Id: confutils.py,v 1.3 2002/02/10 23:42:30 zooko Exp $'
+__cvsid = '$Id: confutils.py,v 1.4 2002/02/11 14:47:57 zooko Exp $'
 
 
-### standard modules
+# standard modules
 import os.path
 import sys
 
 # pyutil modules
 from config import DEBUG_MODE
+from debugprint import debugprint
+
 true = 1
 false = 0
 
-### our modules
-import debug
+# our modules
 import humanreadable
 from mojostd import EGTP_VERSION_STR, CRYPTOPP_VERSION_STR, confdefaults,  platform_map, platform, gen_per_kb_price_dict, DictFileException, lines_to_dict, dict_to_lines, ConfManager, confman
 import types
@@ -32,7 +33,7 @@ import types
 if int(confman.get('MAX_VERBOSITY', 0)) >= 6:
     # Only enable automatic mdecoding of strings in debugprints if we have a high verbosity level; these are extremely
     # CPU, memory cache, and memory bus intensive.
-    debug.mojolog.write("WARNING: high verbosity level, performance will be impacted!\n")
+    debugprint("WARNING: high verbosity level, performance will be impacted!\n")
     humanreadable.mrepr.enable_mdecode = true
     # NOTE: if config.DEBUG evaluates to true then mdecoding will be enabled regardless
     # of verbosity level.

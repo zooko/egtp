@@ -6,7 +6,7 @@
 #    GNU Lesser General Public License v2.1.
 #    See the file COPYING or visit http://www.gnu.org/ for details.
 #
-__cvsid="$Id: Mstart,v 1.1 2002/01/29 20:07:04 zooko Exp $"
+__cvsid="$Id: Mstart,v 1.2 2002/02/11 14:47:55 zooko Exp $"
 
 
 # XXX README README README
@@ -165,7 +165,7 @@ function EGTPenvset {
     NEWPYTHONPATH=`${PYTHON} -c " 
 import os, string 
 pp=string.split(os.environ.get('PYTHONPATH', ''), ':') 
-for np in [ \"${EGTPDIR}/../pyutil\", \"${EGTPDIR}/../mojoasyncore\", \"${EGTPDIR}/common\", \"${EGTPDIR}/common/crypto/Python\", \"${EGTPDIR}/PythonLibs\", ]: 
+for np in [ \"${EGTPDIR}/../libbase32\",\"${EGTPDIR}/../pyutil\", \"${EGTPDIR}/../mojoasyncore\", \"${EGTPDIR}/common\", \"${EGTPDIR}/common/crypto/Python\", \"${EGTPDIR}/PythonLibs\", ]: 
     if not np in pp: pp.insert(0, os.path.abspath(os.path.expandvars(os.path.expanduser(np)))) 
 print string.join(pp, ':') 
 "`

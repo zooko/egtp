@@ -6,7 +6,7 @@
 #    See the file COPYING or visit http://www.gnu.org/ for details.
 #
 
-### standard modules
+# standard modules
 import UserDict
 import asyncore
 import os
@@ -18,7 +18,11 @@ import time
 import traceback
 import types
 
-### our modules
+# pyutil modules
+from config import DEBUG_MODE, REALLY_SLOW_DEBUG_MODE
+from debugprint import debugprint
+
+# (old-)EGTP modules
 import BandwidthThrottler
 import Cache
 import CommsError
@@ -26,12 +30,8 @@ from CommHints import HINT_EXPECT_RESPONSE, HINT_EXPECT_MORE_TRANSACTIONS, HINT_
 import CommStrat
 import DoQ
 import LazySaver
-from config import DEBUG_MODE, REALLY_SLOW_DEBUG_MODE
-true = 1
-false = None
 import TCPConnection
 import confutils
-import debug
 import idlib
 import mojoasyncore
 import mojoutil
@@ -40,6 +40,8 @@ from confutils import confman
 import ipaddresslib
 from humanreadable import hr
 
+true = 1
+false = None
 
 SECS_BETWEEN_IPADDR_RECHECK = 180   # recheck our IP address every 3 minutes incase it has changed
 
@@ -168,11 +170,11 @@ class TCPCommsHandler(asyncore.dispatcher, LazySaver.LazySaver):
             while not newlistenport:
                 try:
                     self.bind(("", try_listenport))
-                    debug.mojolog.write("successfully bound to port %s.\n", args=(try_listenport,), v=1, vs="TCPCommsHandler")
+                    debugprint("successfully bound to port %s.\n", args=(try_listenport,), v=1, vs="TCPCommsHandler")
                     newlistenport = try_listenport
 
                 except socket.error:
-                    debug.mojolog.write("couldn't bind to port %s; trying next port.\n", args=(try_listenport,), v=1, vs="TCPCommsHandler")
+                    debugprint("couldn't bind to port %s; trying next port.\n", args=(try_listenport,), v=1, vs="TCPCommsHandler")
 
                     try_listenport = ((try_listenport + 1 - MIN_PORT) % (MAX_PORT + 1 - MIN_PORT)) + MIN_PORT
 
@@ -184,7 +186,7 @@ class TCPCommsHandler(asyncore.dispatcher, LazySaver.LazySaver):
         self.listen(int(confman['TCP_MAX_CONNECTIONS']))
 
         self._ip = ipaddresslib.get_primary_ip_address(nonroutableok=true)
-        debug.mojolog.write("successfully bound to port %s.\n", args=(try_listenport,), v=1, vs="TCPCommsHandler")
+        debugprint("successfully bound to port %s.\n", args=(try_listenport,), v=1, vs="TCPCommsHandler")
         self._islistening = true
         # Now if we are not throttled then we are now ready to accept connections.
         if not self._throttled:
@@ -196,7 +198,7 @@ class TCPCommsHandler(asyncore.dispatcher, LazySaver.LazySaver):
         DoQ.doq.add_task(self._recheck_ip_address, delay=SECS_BETWEEN_IPADDR_RECHECK)
 
         assert self._listenport > 0
-        debug.mojolog.write("I am listening on port %s and telling %s.\n", args=(self._listenport, inmsg_handler_func), v=4, vs="TCPCommsHandler")
+        debugprint("I am listening on port %s and telling %s.\n", args=(self._listenport, inmsg_handler_func), v=4, vs="TCPCommsHandler")
 
     def _recheck_ip_address(self):
         if not self._islistening:
@@ -239,7 +241,7 @@ class TCPCommsHandler(asyncore.dispatcher, LazySaver.LazySaver):
             try:
                 cs = self._cid_to_cs[counterparty_id]
             except KeyError:
-                debug.mojolog.write("%s._cis_to_cs did not contain %s (%s)\nkeys: %s\n" % (self, `counterparty_id`, hr(counterparty_id), `self._cid_to_cs.keys()`))
+                debugprint("%s._cis_to_cs did not contain %s (%s)\nkeys: %s\n" % (self, `counterparty_id`, hr(counterparty_id), `self._cid_to_cs.keys()`))
                 raise
             self._activate_commstrat(counterparty_id, cs)
             # QUERY: but what if _activate_commstrat failed? (such as a TCP connection that couldn't
@@ -264,11 +266,11 @@ class TCPCommsHandler(asyncore.dispatcher, LazySaver.LazySaver):
         tcpc = self._conncache.get(counterparty_id)
 
         cs = self._cid_to_cs.get(counterparty_id)
-        # debug.mojolog.write("%s._cid_to_cs.get(%s) -> %s\n", args=(self, counterparty_id, cs,))
+        # debugprint("%s._cid_to_cs.get(%s) -> %s\n", args=(self, counterparty_id, cs,))
         if cs:
             # assert (tcpc is None) or (cs.asyncsock is tcpc), "counterparty_id: %s, cs: %s, cs.asyncsock: %s, tcpc: %s" % (hr(counterparty_id), hr(cs), hr(cs.asyncsock), hr(tcpc),)
             if not ((tcpc is None) or (cs.asyncsock is tcpc)):
-                debug.mojolog.write("not ((tcpc is None) or (cs.asyncsock is tcpc)) -- counterparty_id: %s, cs: %s, cs.asyncsock: %s, tcpc: %s\n", args=(counterparty_id, cs, cs.asyncsock, tcpc,), v=0, vs="PSEUDOASSERTION")
+                debugprint("not ((tcpc is None) or (cs.asyncsock is tcpc)) -- counterparty_id: %s, cs: %s, cs.asyncsock: %s, tcpc: %s\n", args=(counterparty_id, cs, cs.asyncsock, tcpc,), v=0, vs="PSEUDOASSERTION")
             if tcpc is None:
                 tcpc = cs.asyncsock
 
@@ -298,7 +300,7 @@ class TCPCommsHandler(asyncore.dispatcher, LazySaver.LazySaver):
             except:
                 pass
 
-            debug.mojolog.write("TCPCommsHandler._internal_send_msg(): removing connection %s _cid_for_debugging: %s, .getpeername(): %s due to HINT_EXPECT_NO_MORE_COMMS.\n", args=(tcpc, tcpc._cid_for_debugging, pn), v=5, vs="comm hints")
+            debugprint("TCPCommsHandler._internal_send_msg(): removing connection %s _cid_for_debugging: %s, .getpeername(): %s due to HINT_EXPECT_NO_MORE_COMMS.\n", args=(tcpc, tcpc._cid_for_debugging, pn), v=5, vs="comm hints")
             self._conncache.remove(counterparty_id)
 
         self._conncache._cleanup_nice()
@@ -307,15 +309,15 @@ class TCPCommsHandler(asyncore.dispatcher, LazySaver.LazySaver):
         curcs = self._cid_to_cs.get(counterparty_id)
         if (curcs is None) or (commstrat and not curcs.same(commstrat)):
             # We aren't using `commstrat', so there is nothing to forget.
-            debug.mojolog.write("TCPCommsHandler was asked to forget unknown commstrat: %s, curcs: %s\n", args=(commstrat, curcs,), v=5, vs="debug")
+            debugprint("TCPCommsHandler was asked to forget unknown commstrat: %s, curcs: %s\n", args=(commstrat, curcs,), v=5, vs="debug")
             return
 
-        # debug.mojolog.write("TCPCommsHandler: Forgetting comm strategy.  counterparty_id: %s, curcs: %s\n", args=(counterparty_id, curcs,), v=6, vs="commstrats")
+        # debugprint("TCPCommsHandler: Forgetting comm strategy.  counterparty_id: %s, curcs: %s\n", args=(counterparty_id, curcs,), v=6, vs="commstrats")
 
         remmed = self._conncache.remove_if_present(counterparty_id)
         # assert (remmed is None) or (remmed is curcs.asyncsock), "counterparty_id: %s, curcs: %s, remmed: %s" % (hr(counterparty_id), hr(curcs), hr(remmed))
         if not ((remmed is None) or remmed._closing or (remmed is curcs.asyncsock)):
-            debug.mojolog.write("not ((remmed is None) or remmed._closing or (remmed is curcs.asyncsock)), counterparty_id: %s, curcs: %s, remmed: %s\n", args=(counterparty_id, curcs, remmed,), v=0, vs="PSEUDOASSERTION")
+            debugprint("not ((remmed is None) or remmed._closing or (remmed is curcs.asyncsock)), counterparty_id: %s, curcs: %s, remmed: %s\n", args=(counterparty_id, curcs, remmed,), v=0, vs="PSEUDOASSERTION")
 
         del self._cid_to_cs[counterparty_id]
         del self._cids_to_activation[counterparty_id]
@@ -332,12 +334,12 @@ class TCPCommsHandler(asyncore.dispatcher, LazySaver.LazySaver):
 
         assert (commstrat.asyncsock is None) or (commstrat.asyncsock._closing) or (commstrat.asyncsock in self._conncache.values()), "commstrat.asyncsock: %s, self._conncache.items(): %s" % (hr(commstrat.asyncsock), hr(self._conncache.items()),)
 
-        # debug.mojolog.write("%s.use_comm_strategy(%s, %s)\n", args=(self, counterparty_id, commstrat,))
+        # debugprint("%s.use_comm_strategy(%s, %s)\n", args=(self, counterparty_id, commstrat,))
 
         curcs = self._cid_to_cs.get(counterparty_id)
 
         preffedcs = CommStrat.choose_best_strategy(curcs, commstrat)
-        # debug.mojolog.write("CommStrat.choose_best_strategy(curcs: %s, commstrat: %s) -> %s\n", args=(curcs, commstrat, preffedcs,))
+        # debugprint("CommStrat.choose_best_strategy(curcs: %s, commstrat: %s) -> %s\n", args=(curcs, commstrat, preffedcs,))
 
         if (preffedcs is not curcs) and (curcs is not None):
             self.forget_comm_strategy(counterparty_id, curcs)
@@ -345,7 +347,7 @@ class TCPCommsHandler(asyncore.dispatcher, LazySaver.LazySaver):
         if preffedcs is commstrat:
             commstrat._tcpch = self
 
-            # debug.mojolog.write("%s._cid_to_cs[%s] = %s\n", args=(self, counterparty_id, commstrat,))
+            # debugprint("%s._cid_to_cs[%s] = %s\n", args=(self, counterparty_id, commstrat,))
             if self._cid_to_cs.get(counterparty_id) is not commstrat:
                 self._cid_to_cs[counterparty_id] = commstrat
                 self._cids_to_activation[counterparty_id] = "not yet"
@@ -360,7 +362,7 @@ class TCPCommsHandler(asyncore.dispatcher, LazySaver.LazySaver):
         """
         assert callable(self._upward_inmsg_handler), "precondition: `self._upward_inmsg_handler' must be callable." + " -- " + "self._upward_inmsg_handler: %s :: %s" % (hr(self._upward_inmsg_handler), hr(type(self._upward_inmsg_handler)),)
 
-        # debug.mojolog.write("TCPCommsHandler._activate_commstrat(%s, %s) stack: %s\n", args=(counterparty_id, cs, traceback.extract_stack(),), v=7, vs="commstrats") # verbose -- commstrats -- traceback.extract_stack() is very slow.
+        # debugprint("TCPCommsHandler._activate_commstrat(%s, %s) stack: %s\n", args=(counterparty_id, cs, traceback.extract_stack(),), v=7, vs="commstrats") # verbose -- commstrats -- traceback.extract_stack() is very slow.
         counterparty_id = idlib.canonicalize(counterparty_id, 'broker')  # this also checks the precondition of counterparty_id being an id
 
         if cs.asyncsock and (not cs.asyncsock._closing):
@@ -375,7 +377,7 @@ class TCPCommsHandler(asyncore.dispatcher, LazySaver.LazySaver):
 
         assert isinstance(tcpc, TCPConnection.TCPConnection)
 
-        # debug.mojolog.write("TCPCommsHandler._activate_commstrat(%s, %s): after activation\n", args=(counterparty_id, cs,), v=7, vs="commstrats")
+        # debugprint("TCPCommsHandler._activate_commstrat(%s, %s): after activation\n", args=(counterparty_id, cs,), v=7, vs="commstrats")
 
         self._conncache.insert(counterparty_id, tcpc)
         assert len(self._conncache) > 0
@@ -400,7 +402,7 @@ class TCPCommsHandler(asyncore.dispatcher, LazySaver.LazySaver):
         # Testing whether this is the only case that this happens.
         # assert (self._conncache.get(asyncsock._key) is asyncsock) or (asyncsock._closing), "asyncsock: %s: asyncsock._key: %s, self._conncache.get(asyncsock._key): %s" % (hr(asyncsock), hr(asyncsock._key), hr(self._conncache.get(asyncsock._key)),)
         if not ((self._conncache.get(asyncsock._key) is asyncsock) or (asyncsock._closing)):
-            debug.mojolog.write("faux AssertionFailure: (self._conncache.get(asyncsock._key) is asyncsock) or (asyncsock._closing) -- asyncsock: %s: asyncsock._key: %s, self._conncache.get(asyncsock._key): %s", args=(asyncsock, asyncsock._key, self._conncache.get(asyncsock._key),))
+            debugprint("faux AssertionFailure: (self._conncache.get(asyncsock._key) is asyncsock) or (asyncsock._closing) -- asyncsock: %s: asyncsock._key: %s, self._conncache.get(asyncsock._key): %s", args=(asyncsock, asyncsock._key, self._conncache.get(asyncsock._key),))
             
         cs = self._cid_to_cs.get(asyncsock._key)
         if (cs is not None) and (cs.asyncsock is asyncsock) and (self._conncache.get(asyncsock._key) is asyncsock) and (not asyncsock._closing):
@@ -425,10 +427,10 @@ class TCPCommsHandler(asyncore.dispatcher, LazySaver.LazySaver):
             thingie = self.accept()
 
             if not (((type(thingie) is types.TupleType) or (type(thingie) is types.ListType))):
-                debug.mojolog.write("got a non-sequence from `socket.accept()'.  Ignoring.  thingie: %s :: %s\n", args=(thingie, type(thingie),), v=0, vs="debug")
+                debugprint("got a non-sequence from `socket.accept()'.  Ignoring.  thingie: %s :: %s\n", args=(thingie, type(thingie),), v=0, vs="debug")
                 return
         except socket.error, le:
-            debug.mojolog.write("got an exception from `socket.accept()'.  Ignoring.  le: %s\n", args=(le,), v=0, vs="debug")
+            debugprint("got an exception from `socket.accept()'.  Ignoring.  le: %s\n", args=(le,), v=0, vs="debug")
             return
 
         (sock, addr) = thingie
@@ -443,25 +445,25 @@ class TCPCommsHandler(asyncore.dispatcher, LazySaver.LazySaver):
         except:
             pass
 
-        # debug.mojolog.write("TCPCommsHandler: handle_accept(): the new socket %s has peername: %s and addr: %s\n", args=(sock, pn, addr), v=7, vs="commstrats")
+        # debugprint("TCPCommsHandler: handle_accept(): the new socket %s has peername: %s and addr: %s\n", args=(sock, pn, addr), v=7, vs="commstrats")
 
         DoQ.doq.add_task(self._conncache.insert, args=(key, tcpc))
 
     def handle_write(self):
-        debug.mojolog.write("TCPCommsHandler: handle_write() called.  self: %s\n", args=(self,), v=0, vs="debug")
+        debugprint("TCPCommsHandler: handle_write() called.  self: %s\n", args=(self,), v=0, vs="debug")
         return
 
     def handle_connect(self):
-        debug.mojolog.write("TCPCommsHandler: handle_connect() called.  self: %s\n", args=(self,), v=0, vs="debug")
+        debugprint("TCPCommsHandler: handle_connect() called.  self: %s\n", args=(self,), v=0, vs="debug")
         return
 
     def handle_read(self):
         # `handle_read()' gets called on Linux 2.4.0.  Oh well.  --Zooko 2001-01-20
-        # debug.mojolog.write("TCPCommsHandler: handle_read() called.  self: %s\n", args=(self,), v=0, vs="debug")
+        # debugprint("TCPCommsHandler: handle_read() called.  self: %s\n", args=(self,), v=0, vs="debug")
         return
 
     def handle_close(self):
-        debug.mojolog.write("TCPCommsHandler: handle_close() called.  self: %s\n", args=(self,), v=0, vs="debug")
+        debugprint("TCPCommsHandler: handle_close() called.  self: %s\n", args=(self,), v=0, vs="debug")
         return
 
     def _throttle(self):
@@ -487,9 +489,9 @@ class TCPCommsHandler(asyncore.dispatcher, LazySaver.LazySaver):
         # for faster operation, comment this whole method out and replace it with "def log(): return".  --Zooko 2000-12-11
         return
         # if message[-1:] == "\n":
-        #     debug.mojolog.write("TCPCommsHandler: asyncore log: " + message, v=7, vs="commstrats")
+        #     debugprint("TCPCommsHandler: asyncore log: " + message, v=7, vs="commstrats")
         # else:
-        #     debug.mojolog.write("TCPCommsHandler: asyncore log: " + message + "\n", v=7, vs="commstrats")
+        #     debugprint("TCPCommsHandler: asyncore log: " + message + "\n", v=7, vs="commstrats")
 
 
 # XXX multithreading issues>  --Zooko 2001-10-04
@@ -541,11 +543,11 @@ class TCPConnCache(Cache.SimpleCache):
         except:
             pass
 
-        # debug.mojolog.write("TCPCommsHandler.TCPConnCache.remove(): key: %s, val: %s, val._cid_for_debugging: %s, val.getpeername(): %s\n", args=(key, tcpc, tcpc._cid_for_debugging, pn), v=8, vs="commstrats")
+        # debugprint("TCPCommsHandler.TCPConnCache.remove(): key: %s, val: %s, val._cid_for_debugging: %s, val.getpeername(): %s\n", args=(key, tcpc, tcpc._cid_for_debugging, pn), v=8, vs="commstrats")
         if tcpc:
             tcpc.close(reason="remove_if_present()")
         else:
-            debug.mojolog.write("TCPCommsHandler.TCPConnCache.remove(): WARNING: didn't find any conn for cid %s\n", args=(key,), v=1, vs="ERROR")
+            debugprint("TCPCommsHandler.TCPConnCache.remove(): WARNING: didn't find any conn for cid %s\n", args=(key,), v=1, vs="ERROR")
         return tcpc
 
     def remove(self, key):
@@ -561,11 +563,11 @@ class TCPConnCache(Cache.SimpleCache):
         except:
             pass
 
-        # debug.mojolog.write("TCPCommsHandler.TCPConnCache.remove(): key: %s, val: %s, val._cid_for_debugging: %s, val.getpeername(): %s\n", args=(key, tcpc, tcpc._cid_for_debugging, pn), v=8, vs="commstrats")
+        # debugprint("TCPCommsHandler.TCPConnCache.remove(): key: %s, val: %s, val._cid_for_debugging: %s, val.getpeername(): %s\n", args=(key, tcpc, tcpc._cid_for_debugging, pn), v=8, vs="commstrats")
         if tcpc:
             tcpc.close(reason="remove()")
         else:
-            debug.mojolog.write("TCPCommsHandler.TCPConnCache.remove(): WARNING: didn't find any conn for cid %s\n", args=(key,), v=1, vs="ERROR")
+            debugprint("TCPCommsHandler.TCPConnCache.remove(): WARNING: didn't find any conn for cid %s\n", args=(key,), v=1, vs="ERROR")
         return tcpc
 
     def insert(self, key, item):
@@ -643,7 +645,7 @@ class TCPConnCache(Cache.SimpleCache):
             return -1 * cmp(tcpa._last_io_time, tcpb._last_io_time) # highest (most recent) io_time first
 
         try:
-            # debug.mojolog.write("TCPConnCache._cleanup(): starting... self: %s, MAINT: %s, MAX: %s, len(self): %s\n", args=(self, confman.get('TCP_MAINTAINED_CONNECTIONS', '5'), confman.get('TCP_MAX_CONNECTIONS', '50'), len(self)), v=6, vs="comm hints") ### for faster operation, comment this line out.  --Zooko 2000-12-11
+            # debugprint("TCPConnCache._cleanup(): starting... self: %s, MAINT: %s, MAX: %s, len(self): %s\n", args=(self, confman.get('TCP_MAINTAINED_CONNECTIONS', '5'), confman.get('TCP_MAX_CONNECTIONS', '50'), len(self)), v=6, vs="comm hints") ### for faster operation, comment this line out.  --Zooko 2000-12-11
 
             now = time.time()
 
@@ -672,9 +674,9 @@ class TCPConnCache(Cache.SimpleCache):
                         pass
 
                     if cutoff == (maxconns - len(listoprobablies)):
-                        debug.mojolog.write("TCPConnCache._cleanup(): removing connection %s _cid_for_debugging: %s, .getpeername(): %s, which I 'maybe' wanted due to too many total connections.\n", args=(tcpc, tcpc._cid_for_debugging, pn), v=5, vs="comm hints")
+                        debugprint("TCPConnCache._cleanup(): removing connection %s _cid_for_debugging: %s, .getpeername(): %s, which I 'maybe' wanted due to too many total connections.\n", args=(tcpc, tcpc._cid_for_debugging, pn), v=5, vs="comm hints")
                     else:
-                        debug.mojolog.write("TCPConnCache._cleanup(): removing connection %s._cid_for_debugging: %s, .getpeername(): %s, which I 'maybe' wanted due to too many maintained connections.\n", args=(tcpc, tcpc._cid_for_debugging, pn), v=5, vs="comm hints")
+                        debugprint("TCPConnCache._cleanup(): removing connection %s._cid_for_debugging: %s, .getpeername(): %s, which I 'maybe' wanted due to too many maintained connections.\n", args=(tcpc, tcpc._cid_for_debugging, pn), v=5, vs="comm hints")
                     self.remove(k)
 
             def addtoprobablies(k, tcpc, self=self, listomaybes=listomaybes, listoprobablies=listoprobablies, cmpprobs=cmpprobs, maxconns=maxconns):
@@ -699,7 +701,7 @@ class TCPConnCache(Cache.SimpleCache):
                     except:
                         pass
 
-                    debug.mojolog.write("TCPConnCache._cleanup(): removing connection %s._cid_for_debugging: %s, .getpeername(): %s, which I 'probably' wanted due to too many total connections.\n", args=(tcpc, tcpc._cid_for_debugging, pn), v=3, vs="comm hints")
+                    debugprint("TCPConnCache._cleanup(): removing connection %s._cid_for_debugging: %s, .getpeername(): %s, which I 'probably' wanted due to too many total connections.\n", args=(tcpc, tcpc._cid_for_debugging, pn), v=3, vs="comm hints")
                     self.remove(k)
 
                 # We can only have this many maybes:
@@ -714,7 +716,7 @@ class TCPConnCache(Cache.SimpleCache):
                     except:
                         pass
 
-                    debug.mojolog.write("TCPConnCache._cleanup(): removing connection %s._cid_for_debugging: %s, .getpeername(): %s, due to too many maintained connections.\n", args=(tcpc, tcpc._cid_for_debugging, pn), v=5, vs="comm hints")
+                    debugprint("TCPConnCache._cleanup(): removing connection %s._cid_for_debugging: %s, .getpeername(): %s, due to too many maintained connections.\n", args=(tcpc, tcpc._cid_for_debugging, pn), v=5, vs="comm hints")
                     self.remove(k)
 
 
@@ -729,45 +731,45 @@ class TCPConnCache(Cache.SimpleCache):
                 if cs:
                     hint = cs.hint
 
-                    # debug.mojolog.write("TCPConnCache._cleanup(): examining connection %s._cid_for_debugging: %s, .getpeername(): %s -- hint: %s, hintnumexpectedresponses: %s, hintnumexpectedsends: %s.\n", args=(tcpc, tcpc._cid_for_debugging, pn, hint, cs.hintnumexpectedresponses, cs.hintnumexpectedsends), v=7, vs="comm hints") ### for faster operation, comment this line out.  --Zooko 2000-12-11
+                    # debugprint("TCPConnCache._cleanup(): examining connection %s._cid_for_debugging: %s, .getpeername(): %s -- hint: %s, hintnumexpectedresponses: %s, hintnumexpectedsends: %s.\n", args=(tcpc, tcpc._cid_for_debugging, pn, hint, cs.hintnumexpectedresponses, cs.hintnumexpectedsends), v=7, vs="comm hints") ### for faster operation, comment this line out.  --Zooko 2000-12-11
                 else:
                     hint = HINT_NO_HINT   # we didn't have a CommStrat for k, no hint available
 
                 # Remove it if it is closing.
                 if tcpc._closing:
-                    # debug.mojolog.write("TCPConnCache._cleanup(): removing connection %s._cid_for_debugging: %s, .getpeername(): %s, because it has been closed.\n", args=(tcpc, tcpc._cid_for_debugging, pn), v=6, vs="comm hints")
+                    # debugprint("TCPConnCache._cleanup(): removing connection %s._cid_for_debugging: %s, .getpeername(): %s, because it has been closed.\n", args=(tcpc, tcpc._cid_for_debugging, pn), v=6, vs="comm hints")
                     self.remove(k)
                     continue
 
                 # Leave it alone if it is busy.
                 if tcpc.is_busy(long(confman.get('TCP_TIMEOUT', '60'))):
-                    # debug.mojolog.write("TCPConnCache._cleanup(): keeping connection %s._cid_for_debugging: %s, .getpeername(): %s probably: it is busy.\n", args=(tcpc, tcpc._cid_for_debugging, pn), v=7, vs="comm hints") ### for faster operation, comment this line out.  --Zooko 2000-12-11
+                    # debugprint("TCPConnCache._cleanup(): keeping connection %s._cid_for_debugging: %s, .getpeername(): %s probably: it is busy.\n", args=(tcpc, tcpc._cid_for_debugging, pn), v=7, vs="comm hints") ### for faster operation, comment this line out.  --Zooko 2000-12-11
 
                     addtoprobablies(k, tcpc)
                     continue
 
                 if (hint & HINT_EXPECT_RESPONSE) or (hint & HINT_EXPECT_TO_RESPOND):
                     # We're waiting for a response.  This one is a definite keeper.
-                    # debug.mojolog.write("TCPConnCache._cleanup(): keeping connection %s._cid_for_debugging: %s, .getpeername(): %s probably: waiting for response.\n", args=(tcpc, tcpc._cid_for_debugging, pn), v=7, vs="comm hints") ### for faster operation, comment this line out.  --Zooko 2000-12-11
+                    # debugprint("TCPConnCache._cleanup(): keeping connection %s._cid_for_debugging: %s, .getpeername(): %s probably: waiting for response.\n", args=(tcpc, tcpc._cid_for_debugging, pn), v=7, vs="comm hints") ### for faster operation, comment this line out.  --Zooko 2000-12-11
 
                     addtoprobablies(k, tcpc)
                     continue
                 if hint & HINT_EXPECT_NO_MORE_COMMS:
                     # loser
-                    debug.mojolog.write("TCPConnCache._cleanup(): removing connection %s._cid_for_debugging: %s, .getpeername(): %s, due to HINT_EXPECT_NO_MORE_COMMS.\n", args=(tcpc, tcpc._cid_for_debugging, pn), v=5, vs="comm hints")
+                    debugprint("TCPConnCache._cleanup(): removing connection %s._cid_for_debugging: %s, .getpeername(): %s, due to HINT_EXPECT_NO_MORE_COMMS.\n", args=(tcpc, tcpc._cid_for_debugging, pn), v=5, vs="comm hints")
                     self.remove(k)
                     continue
                 if hint & HINT_EXPECT_MORE_TRANSACTIONS:
-                    # debug.mojolog.write("TCPConnCache._cleanup(): keeping connection %s._cid_for_debugging: %s, .getpeername(): %s maybe: expect more transactions.\n", args=(tcpc, tcpc._cid_for_debugging, pn), v=7, vs="comm hints") ### for faster operation, comment this line out.  --Zooko 2000-12-11
+                    # debugprint("TCPConnCache._cleanup(): keeping connection %s._cid_for_debugging: %s, .getpeername(): %s maybe: expect more transactions.\n", args=(tcpc, tcpc._cid_for_debugging, pn), v=7, vs="comm hints") ### for faster operation, comment this line out.  --Zooko 2000-12-11
                     addtomaybes(k, tcpc)
                     continue
 
                 # If we have no better clue to go on, then just time it out if it is old.
                 if tcpc.is_idle(long(confman.get('TCP_TIMEOUT', '60'))):
-                    debug.mojolog.write("TCPConnCache._cleanup(): removing connection %s._cid_for_debugging: %s, .getpeername(): %s, due to idleness.\n", args=(tcpc, tcpc._cid_for_debugging, pn), v=5, vs="comm hints")
+                    debugprint("TCPConnCache._cleanup(): removing connection %s._cid_for_debugging: %s, .getpeername(): %s, due to idleness.\n", args=(tcpc, tcpc._cid_for_debugging, pn), v=5, vs="comm hints")
                     self.remove(k)
                 else:
-                    # debug.mojolog.write("TCPConnCache._cleanup(): keeping connection %s._cid_for_debugging: %s, .getpeername(): %s maybe: it isn't idle.\n", args=(tcpc, tcpc._cid_for_debugging, pn), v=8, vs="comm hints") ### for faster operation, comment this line out.  --Zooko 2000-12-11
+                    # debugprint("TCPConnCache._cleanup(): keeping connection %s._cid_for_debugging: %s, .getpeername(): %s maybe: it isn't idle.\n", args=(tcpc, tcpc._cid_for_debugging, pn), v=8, vs="comm hints") ### for faster operation, comment this line out.  --Zooko 2000-12-11
                     pass
 
                     addtomaybes(k, tcpc)
@@ -775,7 +777,7 @@ class TCPConnCache(Cache.SimpleCache):
             return true # success
         finally:
             self._timelastcleaned = time.time()
-            # debug.mojolog.write("TCPConnCache._cleanup(): finishing.  len(self): %s\n", args=(len(self),), v=7, vs="comm hints") ## verbose connection caching diags ### for faster operation, comment this line out.  --Zooko 2000-12-11
+            # debugprint("TCPConnCache._cleanup(): finishing.  len(self): %s\n", args=(len(self),), v=7, vs="comm hints") ## verbose connection caching diags ### for faster operation, comment this line out.  --Zooko 2000-12-11
 
     def _cleanup_nice(self):
         """

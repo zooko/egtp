@@ -6,18 +6,20 @@
 #    GNU Lesser General Public License v2.1.
 #    See the file COPYING or visit http://www.gnu.org/ for details.
 #
-__cvsid = '$Id: EGTPtest.py,v 1.1 2002/01/29 20:07:04 zooko Exp $'
+__cvsid = '$Id: EGTPtest.py,v 1.2 2002/02/11 14:47:55 zooko Exp $'
 
 # standard Python modules
 import threading
 
 # pyutil modules
 import DoQ
-from humanreadable import hr
+from debugprint import debugprint
+
+# libbase32 modules
+from humread import hr
 
 # MN modules
 from confutils import confman
-import debug
 import idlib
 from interfaces import *
 import mencode
@@ -72,7 +74,7 @@ def test_1():
 
     # set a handler func: if any messages come in with message type "ping", the EGTP Node will call this function.
     def l_ping_handler(sender, msg):
-        debug.mojolog.write("yyy EGTPtest: Got a message from %s.  The message says: %s\n", args=(sender, msg,))
+        debugprint("yyy EGTPtest: Got a message from %s.  The message says: %s\n", args=(sender, msg,))
         finishedflag.set()
 
     l.set_handler_func(mtype="ping", handler_func=l_ping_handler)
@@ -81,9 +83,9 @@ def test_1():
     s = Node.Node(lookupman=localLM, discoveryman=localDM)
 
     # have the 2nd node ping the first
-    debug.mojolog.write("yyy EGTPtest: about to send!\n")
+    debugprint("yyy EGTPtest: about to send!\n")
     s.send(lsid, mtype="ping", msg="hello there, number one!")
-    debug.mojolog.write("yyy EGTPtest: sent!\n")
+    debugprint("yyy EGTPtest: sent!\n")
 
 # Create the event queue for this process:
 DoQ.doq = DoQ.DoQ()

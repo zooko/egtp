@@ -21,19 +21,16 @@ import DoQ
 from config import DEBUG_MODE
 from debugprint import debugprint
 
-# EGTP modules
+# (old-)EGTP modules
 import CommsError
-
-true = 1
-false = None
-
-import debug
-
 from humanreadable import hr
 import idlib
 import mojoutil
 import mojoasyncore
 from confutils import confman
+
+true = 1
+false = None
 
 # This is the maximum lowlevel EGTP message size; attempting to
 # receive a message longer than this will cause the EGTP connection

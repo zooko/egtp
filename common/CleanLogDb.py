@@ -1,7 +1,9 @@
 ## Subclass of DB that cleans up it's log files periodically
 
+# pyutil modules
+from debugprint import debugprint
+
 from bsddb3 import db, dbobj
-import debug
 import re
 import os
 import time
@@ -48,7 +50,7 @@ class CleanLogDbEnv(dbobj.DBEnv):
             try:
                 val = apply(self.txn_checkpoint, _args, _kwargs)
             except db.DBError, e:
-                debug.mojolog.write("ignoring db.DBError %s during txn_checkpoint\n", args=(e,), v=3, vs="CleanLogDb")
+                debugprint("ignoring db.DBError %s during txn_checkpoint\n", args=(e,), v=3, vs="CleanLogDb")
         return val
     
     def cleanupLogfiles(self, fileList):
@@ -61,7 +63,7 @@ class CleanLogDbEnv(dbobj.DBEnv):
         l.sort()
         if len(l) > 2:
             to_delete = l[:-2]
-            debug.stderr.write("Cleaning up %s database logs for database %s.\n" % (len(to_delete), self._db_home))
+            debugprint("Cleaning up %s database logs for database %s.\n" % (len(to_delete), self._db_home))
             for file in to_delete:
                 try:
                     os.unlink(os.path.join(self._db_home, file))

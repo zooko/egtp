@@ -10,12 +10,15 @@
 # standard modules
 import os
 
-# our modules
+# pyutil modules
+# from debugprint import debugprint
+
+# (old-)EGTP modules
 import CommStrat
 import DataTypes
 import LazySaver
 from confutils import confman
-import debug
+
 true = 1
 false = None
 
@@ -108,7 +111,7 @@ class ListenerManager(LazySaver.LazySaver):
         if (result is not None) and ((oldstrat is None) or (not result.same(oldstrat))):
             # Announced commstrat has changed.  Bump seqno.
             self._commstratseqno = self._commstratseqno + 1
-            # debug.mojolog.write("ListenerManager.get_comm_strategy_and_newflag(): new comm strat seq no: %s, result: %s, self._lastannouncedcommstratdict: %s, oldstrat: %s, result.same(oldstrat): %s\n", args=(self._commstratseqno, result, self._lastannouncedcommstratdict, oldstrat, result.same(oldstrat),))
+            # debugprint("ListenerManager.get_comm_strategy_and_newflag(): new comm strat seq no: %s, result: %s, self._lastannouncedcommstratdict: %s, oldstrat: %s, result.same(oldstrat): %s\n", args=(self._commstratseqno, result, self._lastannouncedcommstratdict, oldstrat, result.same(oldstrat),))
             self._lastannouncedcommstratdict = result.to_dict()
             self._lazy_save(delay=0)
             newflag = true

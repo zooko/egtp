@@ -5,7 +5,7 @@
 #    GNU Lesser General Public License v2.1.
 #    See the file COPYING or visit http://www.gnu.org/ for details.
 #
-__cvsid = '$Id: MojoTransaction.py,v 1.3 2002/02/11 00:03:26 zooko Exp $'
+__cvsid = '$Id: MojoTransaction.py,v 1.4 2002/02/11 14:47:57 zooko Exp $'
 
 
 # standard modules
@@ -25,6 +25,7 @@ import pickle
 
 # pyutil modules
 from config import DEBUG_MODE
+from debugprint import debugprint
 
 # Mojo Nation modules
 import Cache
@@ -47,7 +48,6 @@ from UnreliableHandicapper import UnreliableHandicapper
 import confutils
 from confutils import confman
 import counterparties
-import debug
 from dictutil import setdefault
 from humanreadable import hr
 import idlib
@@ -88,7 +88,7 @@ class LookupHand(ILookupHandler):
 
     def fail(self):
         # Hrm?  Not sure what to do here....  --Zooko 2002-01-27
-        debug.mojolog.write("%s.fail(%s)\n", args=(self, key,))
+        debugprint("%s.fail(%s)\n", args=(self, key,))
 
         pass
 
@@ -324,7 +324,7 @@ class MojoTransactionManager:
             pass
 
     def _shutdown_members(self):
-        debug.mojolog.write("%s._shutdown_members()\n", args=(self,))
+        debugprint("%s._shutdown_members()\n", args=(self,))
         for member in ('_blobserver', '_handicapper', '_keeper', '_mesgen', '_metamtm', '_cm', '_reqhandler', '_listenermanager',):
             if hasattr(self, member):
                 o = getattr(self, member)
@@ -336,7 +336,7 @@ class MojoTransactionManager:
         if self._shuttingdownflag:
             return
         self._shuttingdownflag = true
-        debug.mojolog.write("%s.shutdown() entering\n", args=(self,))
+        debugprint("%s.shutdown() entering\n", args=(self,))
         self.clear_all_announced_services()
         self.clear_all_handler_funcs()
         self._cm.shutdown()
@@ -344,7 +344,7 @@ class MojoTransactionManager:
         self._ch.shutdown()
         self._shutdown_members()
         self._save_response_times()
-        debug.mojolog.write("%s.shutdown() exiting\n", args=(self,))
+        debugprint("%s.shutdown() exiting\n", args=(self,))
 
     def _load_response_times(self):
         try:
@@ -353,7 +353,7 @@ class MojoTransactionManager:
             f.close()
             self.response_times = pickle.loads(s)
         except:
-            debug.mojolog.write("Creating a new global response_times dict.\n", vs="MojoTransaction", v=2)
+            debugprint("Creating a new global response_times dict.\n", vs="MojoTransaction", v=2)
             self.response_times = {}
         self._responsetimesdirty = false
   
@@ -365,7 +365,7 @@ class MojoTransactionManager:
             self._responsetimesdirty = true
 
     def _save_response_times(self):
-        debug.mojolog.write("Saving global response_times dict.\n", vs="MojoTransaction", v=2)
+        debugprint("Saving global response_times dict.\n", vs="MojoTransaction", v=2)
         f = open(os.path.join(self._dbdir, "response_times"), 'w')
         f.write(pickle.dumps(self.response_times))
         f.close()
@@ -445,7 +445,7 @@ class MojoTransactionManager:
 
         if newflag:
             self._hello_sequence_num_needs_increasing()
-            debug.mojolog.write("our current commstrat: %s\n", args=(cs,), v=0, vs="commstrats")
+            debugprint("our current commstrat: %s\n", args=(cs,), v=0, vs="commstrats")
 
         hello_body={}
         if cs:
@@ -610,9 +610,9 @@ class MojoTransactionManager:
         serverfunc = self._handler_funcs.get(msgtype)
         if not serverfunc:
             if confman.get('MAX_VERBOSITY', 0) >= 3:
-                debug.mojolog.write("DEBUG: received a message of unhandled type `%s': `%s'.\n", args=(msgtype, msgbody), v=3, vs="debug")
+                debugprint("DEBUG: received a message of unhandled type `%s': `%s'.\n", args=(msgtype, msgbody), v=3, vs="debug")
             else:
-                debug.mojolog.write("DEBUG: received a message of unhandled type `%s'.\n", args=(msgtype,), v=1, vs="debug")
+                debugprint("DEBUG: received a message of unhandled type `%s'.\n", args=(msgtype,), v=1, vs="debug")
 
             # force the next message sent to counterparty_id to include our current metainfo
             if self.__counterparties_metainfo_sent_to_map.has_key(counterparty_id):
@@ -725,11 +725,11 @@ class MojoTransactionManager:
                 if counterparty.get_custom_stat(stat) is None:
                     (mu, sigma, ignore) = self.response_times.get(conversationtype, (120, 20, false,))
                     timeout = mu + 2*sigma
-                    debug.mojolog.write("using global average dynamic timeout %s with for %s to %s\n", args=("%0.2f" % timeout, stat, counterparty_id), v=3, vs='counterparty')
+                    debugprint("using global average dynamic timeout %s with for %s to %s\n", args=("%0.2f" % timeout, stat, counterparty_id), v=3, vs='counterparty')
                 else:
                     (mu, sigma, ignore) = counterparty.get_custom_stat(stat)
                     timeout = mu + 2*sigma
-                    debug.mojolog.write("using dynamic timeout %s with for %s to %s\n", args=("%0.2f" % timeout, stat, counterparty_id), v=3, vs='counterparty')
+                    debugprint("using dynamic timeout %s with for %s to %s\n", args=("%0.2f" % timeout, stat, counterparty_id), v=3, vs='counterparty')
 
         timeout = min(mojoutil.intorlongpopL(confman.get('MAX_TIMEOUT', 3600)), timeout)
 
@@ -760,16 +760,16 @@ class MojoTransactionManager:
                 try:
                     # defaults get returned only if it's you
                     (mu, sigma, ignore) = counterparty.get_custom_stat(stat, (0, 0, 0))
-                    debug.mojolog.write("dynamic timing: message %s to %s took %s seconds (mu: %s, sigma: %s)\n", args=(stat, counterparty_id, "%0.2f" % elapsed_time, "%0.2f" % mu, "%0.2f" % sigma), v=3, vs="MojoTransaction")
+                    debugprint("dynamic timing: message %s to %s took %s seconds (mu: %s, sigma: %s)\n", args=(stat, counterparty_id, "%0.2f" % elapsed_time, "%0.2f" % mu, "%0.2f" % sigma), v=3, vs="MojoTransaction")
                     if elapsed_time > (mu+2*sigma):
                         # Assuming a normal distribution, 99.7% caught
-                        debug.mojolog.write("dynamic timing: UNUSUALLY LONG DELAY (normal distribution) on message %s to %s (took: %s mu: %s, sigma: %s)\n", args=(stat, counterparty_id, "%0.2f" % elapsed_time, "%0.2f" % mu, "%0.2f" % sigma), v=4, vs="MojoTransaction")
+                        debugprint("dynamic timing: UNUSUALLY LONG DELAY (normal distribution) on message %s to %s (took: %s mu: %s, sigma: %s)\n", args=(stat, counterparty_id, "%0.2f" % elapsed_time, "%0.2f" % mu, "%0.2f" % sigma), v=4, vs="MojoTransaction")
                     if elapsed_time > 6*mu:
                         # Assuming an exponential distribution, 99.7% caught
-                        debug.mojolog.write("dynamic timing: UNUSUALLY LONG DELAY (exponential distribution) on message %s to %s (took: %s mu: %s)\n", args=(stat, counterparty_id, "%0.2f" % elapsed_time, "%0.2f" % mu), v=4, vs="MojoTransaction")
+                        debugprint("dynamic timing: UNUSUALLY LONG DELAY (exponential distribution) on message %s to %s (took: %s mu: %s)\n", args=(stat, counterparty_id, "%0.2f" % elapsed_time, "%0.2f" % mu), v=4, vs="MojoTransaction")
                 except TypeError:
                     # Statistics are damaged.  Ignore.
-                    debug.mojolog.write("dynamic timing: deleting damaged statistic %s for %s\n", args=(stat, counterparty_id), v=2, vs="MojoTransaction")
+                    debugprint("dynamic timing: deleting damaged statistic %s for %s\n", args=(stat, counterparty_id), v=2, vs="MojoTransaction")
                     # this shouldn't happen, but we should nuke the damaged stat in the event that it does
                     counterparty.delete_custom_stat(stat)
 
@@ -788,7 +788,7 @@ class MojoTransactionManager:
             return outcome_func(widget, outcome, failure_reason)
 
         def wrapped_post_timeout_outcome_func_collect_timings(outcome=None, failure_reason=None, notes=None, post_timeout_outcome_func=post_timeout_outcome_func, collect_timings=collect_timings):
-            debug.mojolog.write("dynamic timing: late return from %s\n", args=(notes['counterparty_id'],), v=3, vs='MojoTransaction')
+            debugprint("dynamic timing: late return from %s\n", args=(notes['counterparty_id'],), v=3, vs='MojoTransaction')
             collect_timings()
             widget = Widget(notes['counterparty_id'], notes['first_message_id'])
             if post_timeout_outcome_func is not None:
@@ -851,7 +851,7 @@ class MojoTransactionManager:
         counterparty_obj = self._keeper.get_counterparty_object(counterparty_id)
 
         if failure_reason is not None:
-            debug.mojolog.write("MTM: msgId: %s :: %s with %s, failed, failure_reason: %s\n", args=(widget._firstmsgId, conversationtype, widget.get_counterparty_id(), failure_reason), v=2, vs="Conversation")
+            debugprint("MTM: msgId: %s :: %s with %s, failed, failure_reason: %s\n", args=(widget._firstmsgId, conversationtype, widget.get_counterparty_id(), failure_reason), v=2, vs="Conversation")
             self.forget_comm_strategy(counterparty_id, widget._firstmsgId, outcome=outcome, failure_reason=failure_reason)
 
             counterparty_obj.decrement_reliability()
@@ -862,25 +862,26 @@ class MojoTransactionManager:
         else:
             counterparty_obj.increment_reliability()
 
-        mojoheader=outcome.get('mojo header', {})
-        mojomessage=outcome.get('mojo message')
+        debugprint("MTM: msgId: %s :: %s with %s, completed\n", args=(widget._firstmsgId, conversationtype, widget.get_counterparty_id(),), v=2, vs="Conversation")
 
-        debug.mojolog.write("MTM: msgId: %s :: %s with %s, completed\n", args=(widget._firstmsgId, conversationtype, widget.get_counterparty_id(),), v=2, vs="Conversation")
+        if outcome is not None:
+            mojoheader=outcome.get('mojo header', {})
+            mojomessage=outcome.get('mojo message')
 
-        if mojoheader.get('result') != "failure":
-            # This is a successful happy response message
+            if mojoheader.get('result') != "failure":
+                # This is a successful happy response message
 
-            # call the callback with the response message
-            if outer_outcome_func:
-                return apply(outer_outcome_func, (), {'widget': widget, 'outcome': mojomessage, 'failure_reason': None})
+                # call the callback with the response message
+                if outer_outcome_func:
+                    return apply(outer_outcome_func, (), {'widget': widget, 'outcome': mojomessage, 'failure_reason': None})
+                else:
+                    return None
             else:
-                return None
-        else:
-            # this is some other undefined failure response.
-            if outer_outcome_func:
-                return apply(outer_outcome_func, (), {'widget': widget, 'outcome': outcome, 'failure_reason': mojoheader.get('failure_reason', "failure reported in mojoheader")})
-            else:
-                return None
+                # this is some other undefined failure response.
+                if outer_outcome_func:
+                    return apply(outer_outcome_func, (), {'widget': widget, 'outcome': outcome, 'failure_reason': mojoheader.get('failure_reason', "failure reported in mojoheader")})
+                else:
+                    return None
 
     def send_message_with_lookup(self, counterparty_id, msg, timeout=300, hint=HINT_NO_HINT, commstratseqno=None):
         """
@@ -913,7 +914,7 @@ class MojoTransactionManager:
         # So for now let's brute-force that issue too -- any failure leads to total deletion of
         # all contact info and comm strats.
         if not idlib.is_sloppy_id(counterparty_id):
-            debug.mojolog.write("WARNING: I want a counterparty_id here.  counterparty_id: %s :: %s, msgId: %s, failure_reason: %s, stack trace: %s\n", args=(counterparty_id, type(counterparty_id), msgId, failure_reason, traceback.extract_stack(),), v=1, vs="debug")
+            debugprint("WARNING: I want a counterparty_id here.  counterparty_id: %s :: %s, msgId: %s, failure_reason: %s, stack trace: %s\n", args=(counterparty_id, type(counterparty_id), msgId, failure_reason, traceback.extract_stack(),), v=1, vs="debug")
         else:
             # failure? count that against their reliability
             counterparty_obj = self._keeper.get_counterparty_object(counterparty_id).decrement_reliability()
@@ -921,9 +922,9 @@ class MojoTransactionManager:
             self.forget_comm_strategy(counterparty_id, firstmsgId=msgId, failure_reason=failure_reason)
 
         if bad_commstrat is not None and counterparty_id is not None:
-            debug.mojolog.write("bad comm strategy for %s: %s = %s?\n", args=(counterparty_id, bad_commstrat, bad_commstrat.__dict__.get('_orig_top_cs')), v=3, vs="FastFail")
+            debugprint("bad comm strategy for %s: %s = %s?\n", args=(counterparty_id, bad_commstrat, bad_commstrat.__dict__.get('_orig_top_cs')), v=3, vs="FastFail")
 
-        debug.mojolog.write("MojoTransactionManager: Attempt to send %s failed.  Aborting transaction.  failure_reason: %s\n", args=(msgId, failure_reason,), v=5, vs="Conversation")
+        debugprint("MojoTransactionManager: Attempt to send %s failed.  Aborting transaction.  failure_reason: %s\n", args=(msgId, failure_reason,), v=5, vs="Conversation")
         if DoQ.doq.is_currently_doq():
             self._cm.fail_conversation(msgId, failure_reason=failure_reason)
         else:
@@ -931,7 +932,7 @@ class MojoTransactionManager:
 
     def forget_comm_strategy(self, counterparty_id, firstmsgId=None, outcome=None, failure_reason=None):
         # XXX would like to make this have same arguments as normal callbacks.  --Zooko 2001-05-14
-        debug.mojolog.write("MojoTransaction: Forgetting comm strategy.  firstmsgId: %s, failure_reason: %s, counterparty_id: %s\n", args=(firstmsgId, failure_reason, counterparty_id,), v=6, vs="commstrats")
+        debugprint("MojoTransaction: Forgetting comm strategy.  firstmsgId: %s, failure_reason: %s, counterparty_id: %s\n", args=(firstmsgId, failure_reason, counterparty_id,), v=6, vs="commstrats")
         # MetaTrackerLib.neg_contact_info(counterparty_id) # XXX I think maybe this causes you to starve yourself of known counterparties and suffer a very poor Mojo Net.  --Zooko 2001-05-15
         self._ch.forget_comm_strategy(counterparty_id)
 
@@ -946,28 +947,28 @@ class MojoTransactionManager:
         counterparty_id = idlib.canonicalize(counterparty_id, "broker")
 
         msgId = idlib.string_to_id(msg)
-        def debugprint(self=self, counterparty_id=counterparty_id, diagstr="", args=(), v=0, vs="conversation"):
+        def _debugprint(self=self, counterparty_id=counterparty_id, diagstr="", args=(), v=0, vs="conversation"):
             printstr="---> %s: " + diagstr + "\n"
             theseargs=[counterparty_id]
 
             theseargs.extend(list(args))
-            debug.mojolog.write(printstr, args=theseargs, v=v, vs=vs)
+            debugprint(printstr, args=theseargs, v=v, vs=vs)
 
         def outer_fast_fail_handler(msgId=msgId, failure_reason="cannot send message", bad_commstrat=None, counterparty_id=counterparty_id, self=self):
             self._ffh(msgId, failure_reason=failure_reason, bad_commstrat=bad_commstrat, counterparty_id=counterparty_id)
 
         maxverb = int(confman.dict.get("MAX_VERBOSITY", 0))
         if maxverb >= 5:
-            debugprint(diagstr="sending: %s, %s bytes uncomp", args=(msg, len(msg)), v=5) # super verbose
+            _debugprint(diagstr="sending: %s, %s bytes uncomp", args=(msg, len(msg)), v=5) # super verbose
         elif maxverb >= 4:
             # XXX note, this slows sending down A LOT! calling MojoMessage.getType() calls mdecode() & template check on the message.  The mdecode part is -extremely- slow (esp on big messages).  -greg 11-oct-2000
             # if we want to display this quickly, we'll need to pass the type in from before we called mencode()
-            debugprint(diagstr="sending: (id: %s, type: %s, %s bytes uncomp, ...)", args=(msgId, MojoMessage.getType(msg), len(msg)), v=4) # semi-verbose
+            _debugprint(diagstr="sending: (id: %s, type: %s, %s bytes uncomp, ...)", args=(msgId, MojoMessage.getType(msg), len(msg)), v=4) # semi-verbose
         elif maxverb >= 3:
-            debugprint(diagstr="sending: (id %s, %s bytes uncomp, ...)", args=(msgId, len(msg)), v=3)
+            _debugprint(diagstr="sending: (id %s, %s bytes uncomp, ...)", args=(msgId, len(msg)), v=3)
 
-        def fast_fail_handler(msgId=msgId, failure_reason="cannot send message", bad_commstrat=None, counterparty_id=counterparty_id, debugprint=debugprint, self=self, msg=msg, timeout=timeout, outer_fast_fail_handler=outer_fast_fail_handler):
-            debugprint(diagstr="failed to send, forgetting comm strat and trying to look up new one...", v=5)
+        def fast_fail_handler(msgId=msgId, failure_reason="cannot send message", bad_commstrat=None, counterparty_id=counterparty_id, _debugprint=_debugprint, self=self, msg=msg, timeout=timeout, outer_fast_fail_handler=outer_fast_fail_handler):
+            _debugprint(diagstr="failed to send, forgetting comm strat and trying to look up new one...", v=5)
             # XXX someday, pass `bad_commstrat' to `forget_comm_strategy()' so that we can forget only the bad one.
             # XXX if we kept a list of comm strategies instead of just one, then we could manage remembering comm strats in just one place.
             # Currently we basically have a list of 2 comm strats, one kept in comms handlers and one kept in MetaTrackerLib.
@@ -976,30 +977,30 @@ class MojoTransactionManager:
             self.forget_comm_strategy(counterparty_id, firstmsgId=msgId, failure_reason=failure_reason)
             self.__query_for_counterparty_and_send(counterparty_id, msg, timeout=timeout, fast_fail_handler=outer_fast_fail_handler)
 
-        # debugprint(diagstr="sending directly [b] ...", v=15, vs="conversation")
+        # _debugprint(diagstr="sending directly [b] ...", v=15, vs="conversation")
         try:
             self._ch.send_msg(counterparty_id, msg, hint=hint, fast_fail_handler=fast_fail_handler, timeout=timeout, commstratseqno=commstratseqno)
-            # debugprint(diagstr="sent.", v=15, vs="conversation")
+            # _debugprint(diagstr="sent.", v=15, vs="conversation")
         except MemoryError, le:
             if DEBUG_MODE:
-                debug.mojolog.write("MojoTransaction.send_message_with_lookup(): called `_ch.send_msg(%s, msgId:%s)' and got MemoryError: %s\n", args=(counterparty_id, msgId, le), v=0, vs="debug")
+                debugprint("MojoTransaction.send_message_with_lookup(): called `_ch.send_msg(%s, msgId:%s)' and got MemoryError: %s\n", args=(counterparty_id, msgId, le), v=0, vs="debug")
             fast_fail_handler(failure_reason=le)
             return
         except CommsError.CannotSendError, le:
-            # debug.mojolog.write("MojoTransaction.send_message_with_lookup(): called `_ch.send_msg(%s, msgId:%s)' and got CannotSendError: %s\n", args=(counterparty_id, msgId, le), v=10, vs="commstrats")
+            # debugprint("MojoTransaction.send_message_with_lookup(): called `_ch.send_msg(%s, msgId:%s)' and got CannotSendError: %s\n", args=(counterparty_id, msgId, le), v=10, vs="commstrats")
             fast_fail_handler(failure_reason=hr(le))
-        # debugprint(diagstr="sent", v=15)
+        # _debugprint(diagstr="sent", v=15)
 
     def __query_for_counterparty_and_send(self, counterparty_id, msg, timeout=300, fast_fail_handler=None, hint=HINT_NO_HINT):
-        def debugprint(self=self, counterparty_id=counterparty_id, msg=msg, diagstr="", args=(), v=0, vs="conversation"):
+        def _debugprint(self=self, counterparty_id=counterparty_id, msg=msg, diagstr="", args=(), v=0, vs="conversation"):
             printstr="---> %s: " + diagstr + "\n"
             theseargs=[counterparty_id]
 
             theseargs.extend(list(args))
-            debug.mojolog.write(printstr, args=theseargs, v=v, vs=vs)
+            debugprint(printstr, args=theseargs, v=v, vs=vs)
 
-        # debugprint(diagstr="looking up contact info...", v=15, vs="metatracking")
+        # _debugprint(diagstr="looking up contact info...", v=15, vs="metatracking")
         lookuphand = LookupHand(counterparty_id, msg, self._ch, hint=hint, fast_fail_handler=fast_fail_handler, timeout=timeout)
         self._lookupman.lookup({'type': "EGTP address", 'key': counterparty_id}, lookuphand)
-        # debugprint(diagstr="done calling nonblocking_get_contact_info...", v=15, vs="metatracking")
+        # _debugprint(diagstr="done calling nonblocking_get_contact_info...", v=15, vs="metatracking")
 

@@ -4,7 +4,7 @@
 #    GNU Lesser General Public License v2.1.
 #    See the file COPYING or visit http://www.gnu.org/ for details.
 #
-__cvsid = '$Id: CryptoCommsHandler.py,v 1.2 2002/02/11 00:03:26 zooko Exp $'
+__cvsid = '$Id: CryptoCommsHandler.py,v 1.3 2002/02/11 14:47:57 zooko Exp $'
 
 # standard modules
 import traceback
@@ -15,6 +15,7 @@ import zlib
 
 # pyutil modules
 from config import DEBUG_MODE, REALLY_SLOW_DEBUG_MODE
+from debugprint import debugprint
 
 # our modules
 import Cache
@@ -24,8 +25,7 @@ from CommHints import HINT_EXPECT_RESPONSE, HINT_EXPECT_MORE_TRANSACTIONS, HINT_
 import DoQ
 import MojoKey
 import confutils
-import debug
-from humanreadable import hr
+import humanreadable
 import idlib
 import mesgen
 import mojosixbit
@@ -103,15 +103,15 @@ class CryptoCommsHandler:
             avoid loops by ensuring that the next comm strategy you try has seqno > than
             this one.
 
-        @precondition `counterparty_id' must be an id.: idlib.is_sloppy_id(counterparty_id): "counterparty_id: %s" % hr(counterparty_id)
+        @precondition `counterparty_id' must be an id.: idlib.is_sloppy_id(counterparty_id): "counterparty_id: %s" % humanreadable.hr(counterparty_id)
         @precondition `msg' must be a string.: type(msg) == types.StringType
         """
-        assert idlib.is_sloppy_id(counterparty_id), "precondition: `counterparty_id' must be an id." + " -- " + "counterparty_id: %s" % hr(counterparty_id)
+        assert idlib.is_sloppy_id(counterparty_id), "precondition: `counterparty_id' must be an id." + " -- " + "counterparty_id: %s" % humanreadable.hr(counterparty_id)
         assert type(msg) == types.StringType, "precondition: `msg' must be a string."
-        assert idlib.is_sloppy_id(counterparty_id), "precondition: `counterparty_id' must be an id." + " -- " + "counterparty_id: %s" % hr(counterparty_id)
+        assert idlib.is_sloppy_id(counterparty_id), "precondition: `counterparty_id' must be an id." + " -- " + "counterparty_id: %s" % humanreadable.hr(counterparty_id)
         assert type(msg) == types.StringType, "precondition: `msg' must be a string."
 
-        # debug.mojolog.write("CryptoCommsHandler.send_msg()\n")
+        # debugprint("CryptoCommsHandler.send_msg()\n")
         if idlib.equal(counterparty_id, self.get_id()):
             DoQ.doq.add_task(self._upward_inmsg_handler, args=(counterparty_id, msg, None))
         else:
@@ -125,10 +125,10 @@ class CryptoCommsHandler:
                 if not llstrat:
                     fast_fail_handler(msgId=idlib.make_id(msg, 'msg'), failure_reason="no llstrat for this counterparty")
                     return
-                assert idlib.equal(llstrat._broker_id, counterparty_id), "counterparty_id: %s, cs: %s, llstrat: %s, llstrat._broker_id: %s" % (hr(counterparty_id), hr(cs), hr(llstrat), hr(llstrat._broker_id),)
+                assert idlib.equal(llstrat._broker_id, counterparty_id), "counterparty_id: %s, cs: %s, llstrat: %s, llstrat._broker_id: %s" % (humanreadable.hr(counterparty_id), humanreadable.hr(cs), humanreadable.hr(llstrat), humanreadable.hr(llstrat._broker_id),)
 
                 if not hasattr(llstrat, 'send'):
-                    fast_fail_handler(msgId=idlib.make_id(msg, 'msg'), failure_reason="CommStrat lacks a `send()' method.: %s" % hr(llstrat))
+                    fast_fail_handler(msgId=idlib.make_id(msg, 'msg'), failure_reason="CommStrat lacks a `send()' method.: %s" % humanreadable.hr(llstrat))
                     return
 
                 if len(msg) > MAX_CLEARTEXT_LEN :
@@ -137,9 +137,9 @@ class CryptoCommsHandler:
                 origmsglen = len(msg)
                 try:
                     msg = zlib.compress(msg, 3)
-                    debug.mojolog.write("CryptoCommsHandler.send_msg(): sending compressed msg (%s bytes, orig %s)\n", args=(len(msg), origmsglen), v=14, vs="crypto")
+                    debugprint("CryptoCommsHandler.send_msg(): sending compressed msg (%s bytes, orig %s)\n", args=(len(msg), origmsglen), v=14, vs="crypto")
                 except zlib.error, e:
-                    debug.mojolog.write("CryptoCommsHandler.send_msg(): got `%s' during compression (%s bytes)\n", args=(e, origmsglen), v=5, vs="crypto") # verbose
+                    debugprint("CryptoCommsHandler.send_msg(): got `%s' during compression (%s bytes)\n", args=(e, origmsglen), v=5, vs="crypto") # verbose
                 cyphertext = self._mesgen.generate_message(recipient_id = counterparty_id, message = msg)
                 del msg  # we're done with it, encourage faster gc
             except mesgen.NoCounterpartyInfo, le:
@@ -154,66 +154,66 @@ class CryptoCommsHandler:
         @param lowerstrategy a comm strategy which is suggested by the caller;  Currently if the caller is a TCP comms handler, then this is a strategy for using the extant TCP connection, upon which `msg' arrived, to send further messages to the counterparty.  If the caller is a Relay comms handler, then this is `None'.  TODO: make it so that you consider using the same relay server to send back
         @param strategy_id_for_debug is a unique identifier which the *lower-level* comms handler uses to identify `lowerstrategy';  This is only used for diagnostic output.  Currently if the lower-level comms is TCP, and we don't yet know a public key which has signed messages that were sent over this TCP connection, then it is a random id, else it is the id of the public key which has signed messages that were sent over this TCP connection.  If the lower-level comms is Relay, then this is `None'.
 
-        @precondition `msg' must be a string.: type(msg) == types.StringType: "msg: %s :: %s" % (hr(msg), hr(type(msg)))
-        @precondition `strategy_id_for_debug' must be None if and only if `lowerstrategy' is None.: (strategy_id_for_debug is None) == (lowerstrategy is None): "strategy_id_for_debug: %s, lowerstrategy: %s" % (hr(strategy_id_for_debug), hr(lowerstrategy))
+        @precondition `msg' must be a string.: type(msg) == types.StringType: "msg: %s :: %s" % (humanreadable.hr(msg), humanreadable.hr(type(msg)))
+        @precondition `strategy_id_for_debug' must be None if and only if `lowerstrategy' is None.: (strategy_id_for_debug is None) == (lowerstrategy is None): "strategy_id_for_debug: %s, lowerstrategy: %s" % (humanreadable.hr(strategy_id_for_debug), humanreadable.hr(lowerstrategy))
         """
-        assert type(msg) == types.StringType, "precondition: `msg' must be a string." + " -- " + "msg: %s :: %s" % (hr(msg), hr(type(msg)))
-        assert (strategy_id_for_debug is None) == (lowerstrategy is None), "precondition: `strategy_id_for_debug' must be None if and only if `lowerstrategy' is None." + " -- " + "strategy_id_for_debug: %s, lowerstrategy: %s" % (hr(strategy_id_for_debug), hr(lowerstrategy))
+        assert type(msg) == types.StringType, "precondition: `msg' must be a string." + " -- " + "msg: %s :: %s" % (humanreadable.hr(msg), humanreadable.hr(type(msg)))
+        assert (strategy_id_for_debug is None) == (lowerstrategy is None), "precondition: `strategy_id_for_debug' must be None if and only if `lowerstrategy' is None." + " -- " + "strategy_id_for_debug: %s, lowerstrategy: %s" % (humanreadable.hr(strategy_id_for_debug), humanreadable.hr(lowerstrategy))
 
         try:
             counterparty_pub_key, cleartext = self._mesgen.parse(msg)
         except mesgen.Error, e:
             if isinstance(e, mesgen.SessionInvalidated):
-                debug.mojolog.write("%s.inmsg_handler(msg: %s, lowerstrategy: %s, strategy_id_for_debug: %s) got exceptions: %s\n", args=(self, msg, lowerstrategy, strategy_id_for_debug, e,), v=3, vs="crypto")
+                debugprint("%s.inmsg_handler(msg: %s, lowerstrategy: %s, strategy_id_for_debug: %s) got exceptions: %s\n", args=(self, msg, lowerstrategy, strategy_id_for_debug, e,), v=3, vs="crypto")
                 return
 
             if lowerstrategy:
                 if hasattr(lowerstrategy, 'asyncsock'):
                     if config.REALLY_SLOW_DEBUG_MODE:
-                        debug.mojolog.write("WARNING: a message arrived with suggested lowerstrategy %s, asyncsock: %s, strategy_id_for_debug: %s, that couldn't be decrypted.  Perhaps it was cleartext, or garbled.  The message was %s.  The error was: %s, traceback: %s\n", args= (lowerstrategy.to_dict(), lowerstrategy.asyncsock, strategy_id_for_debug, msg, e, traceback.extract_stack(),), v=1, vs="crypto")
+                        debugprint("WARNING: a message arrived with suggested lowerstrategy %s, asyncsock: %s, strategy_id_for_debug: %s, that couldn't be decrypted.  Perhaps it was cleartext, or garbled.  The message was %s.  The error was: %s, traceback: %s\n", args= (lowerstrategy.to_dict(), lowerstrategy.asyncsock, strategy_id_for_debug, msg, e, traceback.extract_stack(),), v=1, vs="crypto")
                     else:
-                        debug.mojolog.write("WARNING: a message arrived with suggested lowerstrategy %s, asyncsock: %s, strategy_id_for_debug: %s, that couldn't be decrypted.  Perhaps it was cleartext, or garbled.  The message was %s.  The error was: %s\n", args= (lowerstrategy.to_dict(), lowerstrategy.asyncsock, strategy_id_for_debug, msg, e), v=1, vs="crypto")
+                        debugprint("WARNING: a message arrived with suggested lowerstrategy %s, asyncsock: %s, strategy_id_for_debug: %s, that couldn't be decrypted.  Perhaps it was cleartext, or garbled.  The message was %s.  The error was: %s\n", args= (lowerstrategy.to_dict(), lowerstrategy.asyncsock, strategy_id_for_debug, msg, e), v=1, vs="crypto")
                 else:
                     if config.REALLY_SLOW_DEBUG_MODE:
-                        debug.mojolog.write("WARNING: a message arrived with suggested lowerstrategy %s, strategy_id_for_debug: %s, that couldn't be decrypted.  Perhaps it was cleartext, or garbled.  The message was %s.  The error was: %s, traceback: %s\n", args=(lowerstrategy.to_dict(), strategy_id_for_debug, msg, e, traceback.extract_stack(),), v=1, vs="crypto")
+                        debugprint("WARNING: a message arrived with suggested lowerstrategy %s, strategy_id_for_debug: %s, that couldn't be decrypted.  Perhaps it was cleartext, or garbled.  The message was %s.  The error was: %s, traceback: %s\n", args=(lowerstrategy.to_dict(), strategy_id_for_debug, msg, e, traceback.extract_stack(),), v=1, vs="crypto")
                     else:
-                        debug.mojolog.write("WARNING: a message arrived with suggested lowerstrategy %s, strategy_id_for_debug: %s, that couldn't be decrypted.  Perhaps it was cleartext, or garbled.  The message was %s.  The error was: %s\n", args=(lowerstrategy.to_dict(), strategy_id_for_debug, msg, e), v=1, vs="crypto")
+                        debugprint("WARNING: a message arrived with suggested lowerstrategy %s, strategy_id_for_debug: %s, that couldn't be decrypted.  Perhaps it was cleartext, or garbled.  The message was %s.  The error was: %s\n", args=(lowerstrategy.to_dict(), strategy_id_for_debug, msg, e), v=1, vs="crypto")
             else:
                 if config.REALLY_SLOW_DEBUG_MODE:
-                    debug.mojolog.write("WARNING: a message arrived with suggested strategy_id_for_debug %s that couldn't be decrypted.  Perhaps it was cleartext, or garbled.  The message was %s.  The error was: %s, traceback: %s\n", args=(strategy_id_for_debug, msg, e, traceback.extract_stack(),), v=1, vs="crypto")
+                    debugprint("WARNING: a message arrived with suggested strategy_id_for_debug %s that couldn't be decrypted.  Perhaps it was cleartext, or garbled.  The message was %s.  The error was: %s, traceback: %s\n", args=(strategy_id_for_debug, msg, e, traceback.extract_stack(),), v=1, vs="crypto")
                 else:
-                    debug.mojolog.write("WARNING: a message arrived with suggested strategy_id_for_debug %s that couldn't be decrypted.  Perhaps it was cleartext, or garbled.  The message was %s.  The error was: %s\n", args=(strategy_id_for_debug, msg, e), v=1, vs="crypto")
+                    debugprint("WARNING: a message arrived with suggested strategy_id_for_debug %s that couldn't be decrypted.  Perhaps it was cleartext, or garbled.  The message was %s.  The error was: %s\n", args=(strategy_id_for_debug, msg, e), v=1, vs="crypto")
 
             # if it is an UnknownSession error, attempt to send a note back down the lowerstrategy if it happens to be a two way connection
             if isinstance(e, mesgen.UnknownSession) and lowerstrategy:
                 # XXX if all CommStrats are updated in the future to have a send() method, just use it if the CommStrat has a "twowaycomms" flag?
                 if isinstance(lowerstrategy, CommStrat.TCP) and lowerstrategy.asyncsock:
-                    debug.mojolog.write("sending an 'invalidate session' note back on the TCP connection\n", v=1, vs="CryptoCommsHandler")
+                    debugprint("sending an 'invalidate session' note back on the TCP connection\n", v=1, vs="CryptoCommsHandler")
                     # send e.invalidate_session_msg back out this TCP Connection
                     lowerstrategy.asyncsock.send(e.invalidate_session_msg)
                 else:
-                    debug.mojolog.write("message did not come via a two way CommStrat, cannot send an 'invalidate session'\n", v=3, vs="CryptoCommsHandler")
+                    debugprint("message did not come via a two way CommStrat, cannot send an 'invalidate session'\n", v=3, vs="CryptoCommsHandler")
 
             return # drop it on the floor
 
         counterparty_id = idlib.string_to_id(counterparty_pub_key)
 
-        assert MojoKey.publicRSAKeyForCommunicationSecurityIsWellFormed(counterparty_pub_key), "postcondition of `mesgen.parse()': `counterparty_pub_key' is a public key." + " -- " + "counterparty_pub_key: %s" % hr(counterparty_pub_key)
+        assert MojoKey.publicRSAKeyForCommunicationSecurityIsWellFormed(counterparty_pub_key), "postcondition of `mesgen.parse()': `counterparty_pub_key' is a public key." + " -- " + "counterparty_pub_key: %s" % humanreadable.hr(counterparty_pub_key)
 
         if len(cleartext) > MAX_CLEARTEXT_LEN :
-            debug.mojolog.write("msg from %s dropped due to length: %s\n", args=(counterparty_id, len(cleartext)), v=0, vs="ERROR")
+            debugprint("msg from %s dropped due to length: %s\n", args=(counterparty_id, len(cleartext)), v=0, vs="ERROR")
             return
         try:
             decomptext = mojoutil.safe_zlib_decompress_to_retval(cleartext, maxlen=MAX_CLEARTEXT_LEN)
         except (mojoutil.UnsafeDecompressError, mojoutil.TooBigError), le:
-            debug.mojolog.write("msg from %s dropped. le: %s\n", args=(counterparty_id, le), v=0, vs="ERROR")
+            debugprint("msg from %s dropped. le: %s\n", args=(counterparty_id, le), v=0, vs="ERROR")
             return
         except mojoutil.ZlibError, le:
-            debug.mojolog.write("msg from %s not zlib encoded. processing it anyway for backwards compatibility. le: %s\n", args=(counterparty_id, le,), v=3, vs="debug")
+            debugprint("msg from %s not zlib encoded. processing it anyway for backwards compatibility. le: %s\n", args=(counterparty_id, le,), v=3, vs="debug")
             decomptext = cleartext
 
         if lowerstrategy is not None:
-            assert (lowerstrategy._broker_id is None) or idlib.equal(lowerstrategy._broker_id, counterparty_id), "counterparty_id: %s, lowerstrategy: %s, lowerstrategy._broker_id: %s" % (hr(counterparty_id), hr(lowerstrategy), hr(lowerstrategy._broker_id),)
+            assert (lowerstrategy._broker_id is None) or idlib.equal(lowerstrategy._broker_id, counterparty_id), "counterparty_id: %s, lowerstrategy: %s, lowerstrategy._broker_id: %s" % (humanreadable.hr(counterparty_id), humanreadable.hr(lowerstrategy), humanreadable.hr(lowerstrategy._broker_id),)
             lowerstrategy._broker_id = counterparty_id
             self.use_comm_strategy(counterparty_id, CommStrat.Crypto(counterparty_pub_key, lowerstrategy))
         self._upward_inmsg_handler(counterparty_id, decomptext, self._cid_to_cs.get(counterparty_id))
@@ -226,7 +226,7 @@ class CryptoCommsHandler:
 
         curcs = self._cid_to_cs.get(counterparty_id)
         if curcs and ((commstrat is None) or (curcs.same(commstrat))):
-            debug.mojolog.write("CryptoCommsHandler: Forgetting comm strategy.  counterparty_id: %s, curcs: %s\n", args=(counterparty_id, curcs,), v=6, vs="commstrats")
+            debugprint("CryptoCommsHandler: Forgetting comm strategy.  counterparty_id: %s, curcs: %s\n", args=(counterparty_id, curcs,), v=6, vs="commstrats")
             ls = curcs._lowerstrategy
             if ls:
                 if isinstance(ls, CommStrat.TCP):
@@ -267,12 +267,12 @@ class CryptoCommsHandler:
             you want to force adoption of a new strategy, call `forget_comm_strategy()' first.
 
         @precondition This thread must be the DoQ thread.: DoQ.doq.is_currently_doq()
-        @precondition `counterparty_id' must be a binary id.: idlib.is_binary_id(counterparty_id): "counterparty_id: %s" % hr(counterparty_id)
-        @precondition `counterparty_id' must match the commstrat public key.: idlib.equals(idlib.make_id(commstrat._pubkey, 'broker'), counterparty_id): "counterparty_id: %s, commstrat: %s" % (hr(counterparty_id), hr(commstrat),)
+        @precondition `counterparty_id' must be a binary id.: idlib.is_binary_id(counterparty_id): "counterparty_id: %s" % humanreadable.hr(counterparty_id)
+        @precondition `counterparty_id' must match the commstrat public key.: idlib.equals(idlib.make_id(commstrat._pubkey, 'broker'), counterparty_id): "counterparty_id: %s, commstrat: %s" % (humanreadable.hr(counterparty_id), humanreadable.hr(commstrat),)
         """
         assert DoQ.doq.is_currently_doq(), "precondition: This thread must be the DoQ thread."
-        assert idlib.is_binary_id(counterparty_id), "precondition: `counterparty_id' must be a binary id." + " -- " + "counterparty_id: %s" % hr(counterparty_id)
-        assert idlib.equals(idlib.make_id(commstrat._pubkey, 'broker'), counterparty_id), "precondition: `counterparty_id' must match the commstrat public key." + " -- " + "counterparty_id: %s, commstrat: %s" % (hr(counterparty_id), hr(commstrat),)
+        assert idlib.is_binary_id(counterparty_id), "precondition: `counterparty_id' must be a binary id." + " -- " + "counterparty_id: %s" % humanreadable.hr(counterparty_id)
+        assert idlib.equals(idlib.make_id(commstrat._pubkey, 'broker'), counterparty_id), "precondition: `counterparty_id' must match the commstrat public key." + " -- " + "counterparty_id: %s, commstrat: %s" % (humanreadable.hr(counterparty_id), humanreadable.hr(commstrat),)
 
         # If we already have a CommStrat.Crypto object then we'll continue to use it (it might
         # have useful hint information in it) instead of the new one, but we'll examine the new
