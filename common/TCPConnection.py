@@ -7,27 +7,21 @@
 #
 
 # standard Python modules
-import asyncore
-import threading
-import time
-import socket
-import types
-import struct
-import traceback
-import sys
+import asyncore, socket, struct, sys, threading, time, traceback, types
 
 # pyutil modules
 import DoQ
 from config import DEBUG_MODE
-from debugprint import debugprint
+from debugprint import debugprint, debugstream
+import humanreadable
 import pyutilasync
 
 # (old-)EGTP modules
-import CommsError
-from humanreadable import hr
-import idlib
-import mojoutil
 from confutils import confman
+
+# EGTP modules
+import CommsError
+import idlib
 
 true = 1
 false = None
@@ -47,9 +41,9 @@ class TCPConnection(asyncore.dispatcher):
         @param key a key for identifying this connection;  (Hint: if you know the counterparty id use that, else use `idlib.make_new_random_id(thingtype='TCPConnection')')
         @param close_handler_func a function that gets called when the TCPConnection closes
 
-        @precondition `key' must be a binary id.: idlib.is_binary_id(key): "key: %s :: %s" % (hr(key), hr(type(key)),)
+        @precondition `key' must be a binary id.: idlib.is_binary_id(key): "key: %s :: %s" % (humanreadable.hr(key), humanreadable.hr(type(key)),)
         """
-        assert idlib.is_binary_id(key), "precondition: `key' must be a binary id." + " -- " + "key: %s :: %s" % (hr(key), hr(type(key)),)
+        assert idlib.is_binary_id(key), "precondition: `key' must be a binary id." + " -- " + "key: %s :: %s" % (humanreadable.hr(key), humanreadable.hr(type(key)),)
 
         # `_cid_for_debugging' is for debugging.
         self._cid_for_debugging = cid_for_debugging
@@ -139,13 +133,13 @@ class TCPConnection(asyncore.dispatcher):
 
             try:
                 pn = self.getpeername()
-                return '<%s %s to %s at %s:%s, %x>' % (self.__class__.__name__, state, hr(self._cid_for_debugging), pn[0], pn[1], id(self))
+                return '<%s %s to %s at %s:%s, %x>' % (self.__class__.__name__, state, humanreadable.hr(self._cid_for_debugging), pn[0], pn[1], id(self))
             except:
                 # `getpeername()' raises an exception sometimes, for example if the socket isn't connected yet.  That's a pretty silly interface, isn't it?  --Zooko 2001-06-17
-                return '<%s %s to %s, %x>' % (self.__class__.__name__, state, hr(self._cid_for_debugging), id(self))
+                return '<%s %s to %s, %x>' % (self.__class__.__name__, state, humanreadable.hr(self._cid_for_debugging), id(self))
         except:
             debugprint("exception in TCPConnection.__repr__():\n")
-            traceback.print_exc(file=debug.mojolog)
+            traceback.print_exc(file=debugstream)
             raise
 
     def _fail_if_not_connected(self):
@@ -224,7 +218,7 @@ class TCPConnection(asyncore.dispatcher):
         lenmsg = len(msg)
         if lenmsg > MAXIMUM_MSG_SIZE:
             if fast_fail_handler:
-                DoQ.doq.add_task(fast_fail_handler, kwargs={'failure_reason': "message too long: %s" % hr(lenmsg)})
+                DoQ.doq.add_task(fast_fail_handler, kwargs={'failure_reason': "message too long: %s" % humanreadable.hr(lenmsg)})
             return
 
         # TODO this is gross, it does a full data copy of the message just to prepend 4 bytes
@@ -419,11 +413,11 @@ class TCPConnection(asyncore.dispatcher):
 
     def _chunkify(self, nextstream, unpack=struct.unpack):
         """
-        @precondition `self._upward_inmsg_handler' must be callable.: callable(self._upward_inmsg_handler): "self._upward_inmsg_handler: %s :: %s" % (hr(self._upward_inmsg_handler), hr(type(self._upward_inmsg_handler)),)
+        @precondition `self._upward_inmsg_handler' must be callable.: callable(self._upward_inmsg_handler): "self._upward_inmsg_handler: %s :: %s" % (humanreadable.hr(self._upward_inmsg_handler), humanreadable.hr(type(self._upward_inmsg_handler)),)
         """
-        assert callable(self._upward_inmsg_handler), "precondition: `self._upward_inmsg_handler' must be callable." + " -- " + "self._upward_inmsg_handler: %s :: %s" % (hr(self._upward_inmsg_handler), hr(type(self._upward_inmsg_handler)),)
+        assert callable(self._upward_inmsg_handler), "precondition: `self._upward_inmsg_handler' must be callable." + " -- " + "self._upward_inmsg_handler: %s :: %s" % (humanreadable.hr(self._upward_inmsg_handler), humanreadable.hr(type(self._upward_inmsg_handler)),)
 
-        assert (self._inbuflen == 0) or (len(self._inbufq) > 0), "self._inbuflen: %s, self._inbufq: %s" % (hr(self._inbuflen), hr(self._inbufq),)
+        assert (self._inbuflen == 0) or (len(self._inbufq) > 0), "self._inbuflen: %s, self._inbufq: %s" % (humanreadable.hr(self._inbuflen), humanreadable.hr(self._inbufq),)
 
         lennextstream = len(nextstream)
         if lennextstream == 0:
@@ -439,17 +433,17 @@ class TCPConnection(asyncore.dispatcher):
         inbuflen = inbuflen + lennextstream
         inbufq.append(nextstream)
         # debugprint("%s._chunkify() called, nextinmsglen: %s, inbuflen: %s, offset: %s, inbufq: %s\n", args=(self, nextinmsglen, inbuflen, offset, inbufq,), v=0, vs="debug")
-        assert (inbuflen == 0) or (len(inbufq) > 0), "inbuflen: %s, inbufq: %s" % (hr(inbuflen), hr(inbufq),)
+        assert (inbuflen == 0) or (len(inbufq) > 0), "inbuflen: %s, inbufq: %s" % (humanreadable.hr(inbuflen), humanreadable.hr(inbufq),)
 
         if (nextinmsglen is None) and (inbuflen >= 4):
             # collect the four bytes.  (Note that 99% of the time we will execute the while loop body zero times and the remaining 1% of the time we will execute it one time, unless there is something REALLY funny going on -- that is, unless `_chunkify()' was called with `nextstream' was of size 1.)
-            assert len(inbufq) > 0, "inbufq: %s" % hr(inbufq)
+            assert len(inbufq) > 0, "inbufq: %s" % humanreadable.hr(inbufq)
             while len(inbufq[0]) < (offset + 4):
-                assert len(inbufq) > 1, "inbufq: %s" % hr(inbufq)
+                assert len(inbufq) > 1, "inbufq: %s" % humanreadable.hr(inbufq)
                 inbufq[0] = inbufq[0] + inbufq[1]
                 del inbufq[1]
 
-            assert len(inbufq[0]) >= (offset + 4), "inbufq: %s, offset: %s" % hr(inbufq, offset,)
+            assert len(inbufq[0]) >= (offset + 4), "inbufq: %s, offset: %s" % humanreadable.hr(inbufq, offset,)
 
             nextinmsglen = unpack('>L', inbufq[0][offset:(offset + 4)])[0]
             assert type(nextinmsglen) is types.LongType
@@ -466,7 +460,7 @@ class TCPConnection(asyncore.dispatcher):
         # Now this is the loop to extract and upsend each message.  Note that we replicate the "extract next msg len" code from above at the end of this loop.  This is the common idiom of "compute a value; while it is big enough: do some stuff; compute the value again"
         while (nextinmsglen is not None) and (inbuflen >= (nextinmsglen + 4)):
             # debugprint("%s._chunkify(), in loop offset: %s, inbufq: %s\n", args=(self, offset, inbufq,), v=0, vs="debug")
-            assert (inbuflen == 0) or (len(inbufq) > 0), "inbuflen: %s, inbufq: %s" % (hr(inbuflen), hr(inbufq),)
+            assert (inbuflen == 0) or (len(inbufq) > 0), "inbuflen: %s, inbufq: %s" % (humanreadable.hr(inbuflen), humanreadable.hr(inbufq),)
             # debugprint("%s._chunkify(): collecting next message of length: %s\n", args=(self, nextinmsglen,), v=6, vs="debug")
             leninbufq0 = len(inbufq[0])
             nextchunki = nextinmsglen+offset+4
@@ -503,7 +497,7 @@ class TCPConnection(asyncore.dispatcher):
                         remain = remain - leninbufqi
                     i = i + 1
             inbuflen = inbuflen - (nextinmsglen + 4)
-            assert (inbuflen == 0) or (len(inbufq) > 0), "inbuflen: %s, inbufq: %s" % (hr(inbuflen), hr(inbufq),)
+            assert (inbuflen == 0) or (len(inbufq) > 0), "inbuflen: %s, inbufq: %s" % (humanreadable.hr(inbuflen), humanreadable.hr(inbufq),)
 
             self._inmsgs = self._inmsgs + 1
             self._nummsgs = self._nummsgs + 1
@@ -516,13 +510,13 @@ class TCPConnection(asyncore.dispatcher):
                 nextinmsglen = None
             else:
                 # collect the four bytes.  (Note that 99% of the time we will execute the while loop body zero times and the remaining 1% of the time we will execute it one time, unless there is something REALLY funny going on -- that is, unless `_chunkify()' was called with `nextstream' was of size 1.)
-                assert len(inbufq) > 0, "inbufq: %s" % hr(inbufq)
+                assert len(inbufq) > 0, "inbufq: %s" % humanreadable.hr(inbufq)
                 while len(inbufq[0]) < (offset + 4):
-                    assert len(inbufq) > 1, "inbufq: %s" % hr(inbufq)
+                    assert len(inbufq) > 1, "inbufq: %s" % humanreadable.hr(inbufq)
                     inbufq[0] = inbufq[0] + inbufq[1]
                     del inbufq[1]
 
-                assert len(inbufq[0]) >= (offset + 4), "inbufq: %s, offset: %s" % hr(inbufq, offset,)
+                assert len(inbufq[0]) >= (offset + 4), "inbufq: %s, offset: %s" % humanreadable.hr(inbufq, offset,)
 
                 nextinmsglen = unpack('>L', inbufq[0][offset:(offset + 4)])[0]
                 assert type(nextinmsglen) is types.LongType
@@ -540,7 +534,7 @@ class TCPConnection(asyncore.dispatcher):
         self._inbufq = inbufq
         self._inbuflen = inbuflen
         self._offset = offset
-        assert (self._inbuflen == 0) or (len(self._inbufq) > 0), "self._inbuflen: %s, self._inbufq: %s" % (hr(self._inbuflen), hr(self._inbufq),)
+        assert (self._inbuflen == 0) or (len(self._inbufq) > 0), "self._inbuflen: %s, self._inbufq: %s" % (humanreadable.hr(self._inbuflen), humanreadable.hr(self._inbufq),)
 
     def handle_read(self):
         if self._closing:
@@ -637,8 +631,4 @@ def test_chunkify():
     help_test(msgs, (5, 10, 20, 30, 40, 50,))
     help_test(msgs, (15, 20, 30, 40, 50,))
     help_test(msgs, (15, 17, 23, 40, 50,))
-
-#### this runs if you import this module by itself
-if __name__ == '__main__':
-    test_chunkify()
 
