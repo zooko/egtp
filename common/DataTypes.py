@@ -10,8 +10,8 @@
 import types
 
 ### our modules
-import MojoConstants
-from MojoConstants import true, false
+true = 1
+false = 0
 from MojoErrors import BadFormatError
 import mojosixbit
 import std

@@ -13,7 +13,8 @@ import binascii
 
 import std
 
-from MojoConstants import true, false
+true = 1
+false = 0
 import mojosixbit
 
 

@@ -12,7 +12,8 @@ import re
 ### our modules
 from DataTypes import ANY, MOD_VAL, NON_NEGATIVE_INTEGER, UNIQUE_ID, ASCII_ARMORED_DATA
 import OurMessages
-from MojoConstants import true, false
+true = 1
+false = 0
 import MojoMessage
 import idlib
 import mencode

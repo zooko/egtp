@@ -5,7 +5,7 @@
 #    GNU Lesser General Public License v2.1.
 #    See the file COPYING or visit http://www.gnu.org/ for details.
 #
-__cvsid = '$Id: MojoTransaction.py,v 1.1 2002/01/29 20:07:05 zooko Exp $'
+__cvsid = '$Id: MojoTransaction.py,v 1.2 2002/02/10 23:42:30 zooko Exp $'
 
 
 # standard modules
@@ -23,7 +23,10 @@ from traceback import print_stack, print_exc
 import types
 import pickle
 
-# our modules
+# pyutil modules
+from config import DEBUG_MODE
+
+# Mojo Nation modules
 import Cache
 from CommHints import HINT_EXPECT_RESPONSE, HINT_EXPECT_MORE_TRANSACTIONS, HINT_EXPECT_NO_MORE_COMMS, HINT_EXPECT_TO_RESPOND, HINT_THIS_IS_A_RESPONSE, HINT_NO_HINT
 import CommStrat
@@ -32,8 +35,6 @@ import Conversation
 import CryptoCommsHandler
 import DoQ
 import ListenerManager
-import MojoConstants
-from MojoConstants import DEBUG_MODE
 true = 1
 false = 0
 from MojoHandicapper import MojoHandicapper

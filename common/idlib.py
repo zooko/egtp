@@ -11,16 +11,18 @@
 # Everything in this file is optimized for speed, it gets called a
 # -lot- throughout the program, including many hot spots.
 #
-# $Id: idlib.py,v 1.1 2002/01/29 20:07:05 zooko Exp $
+# $Id: idlib.py,v 1.2 2002/02/10 23:42:30 zooko Exp $
 
-### standard modules
+# standard modules
 import re
 import sha
 import struct
 import types
 
-### our modules
-import MojoConstants
+# pyutil modules
+from config import DEBUG_MODE
+
+# Mojo Nation modules
 import std
 import mojosixbit
 import randsource
@@ -86,7 +88,7 @@ def id_to_native_int(id, IntType=types.IntType, LongType=types.LongType, FloatTy
     try:
         # std.mojolog.write("id: %s, %s, %s, %s\n" % (id, str(id), repr(id), std.hr(id),))
         nid = mojosixbit.a2b(id)
-        if MojoConstants.DEBUG_MODE:
+        if DEBUG_MODE:
             if len(nid) < 20:
                 std.mojolog.write("WARNING: `id_to_native_int()' called with a value that might have been ascii-encoded: id: %s, nid: %s.  Please fix it.\n" % (id, nid,), vs="debug", v=6)
 

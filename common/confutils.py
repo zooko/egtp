@@ -10,16 +10,19 @@
 #
 # BirthDate: 2000-06-08
 # CVS:
-__cvsid = '$Id: confutils.py,v 1.2 2002/01/29 22:40:31 zooko Exp $'
+__cvsid = '$Id: confutils.py,v 1.3 2002/02/10 23:42:30 zooko Exp $'
 
 
 ### standard modules
 import os.path
 import sys
 
+# pyutil modules
+from config import DEBUG_MODE
+true = 1
+false = 0
+
 ### our modules
-from MojoConstants import true, false, DEBUG_MODE
-import MojoConstants
 import debug
 import humanreadable
 from mojostd import EGTP_VERSION_STR, CRYPTOPP_VERSION_STR, confdefaults,  platform_map, platform, gen_per_kb_price_dict, DictFileException, lines_to_dict, dict_to_lines, ConfManager, confman
@@ -31,7 +34,7 @@ if int(confman.get('MAX_VERBOSITY', 0)) >= 6:
     # CPU, memory cache, and memory bus intensive.
     debug.mojolog.write("WARNING: high verbosity level, performance will be impacted!\n")
     humanreadable.mrepr.enable_mdecode = true
-    # NOTE: if MojoConstants.DEBUG evaluates to true then mdecoding will be enabled regardless
+    # NOTE: if config.DEBUG evaluates to true then mdecoding will be enabled regardless
     # of verbosity level.
 
 def do_tests():

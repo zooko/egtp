@@ -11,7 +11,8 @@ import exceptions
 import os
 
 ### our modules
-from MojoConstants import true, false
+true = 1
+false = 0
 import mojosixbit
 import randsource
 import std

@@ -12,17 +12,20 @@ import time # actually just for debugging
 import traceback # actually just for debugging
 import types
 
+# pyutil modules
+from config import DEBUG_MODE
+
 # our modules
 import DataTypes
 import OurMessages
 import debug
 import idlib
 
+# Mojo Nation modules
 from CommHints import HINT_EXPECT_RESPONSE, HINT_EXPECT_MORE_TRANSACTIONS, HINT_EXPECT_NO_MORE_COMMS, HINT_NO_HINT
 from DataTypes import UNIQUE_ID, ANY, ASCII_ARMORED_DATA, NON_NEGATIVE_INTEGER, MOD_VAL, INTEGER, ListMarker, OptionMarker
-from MojoConstants import DEBUG_MODE
 true = 1
-false = None
+false = 0
 import MojoKey
 import MojoMessage
 import OurMessages
