@@ -157,6 +157,9 @@ class CommStrat:
             d['comm strat sequence num'] = self._commstratseqno
         return d
 
+    def get_id(self):
+        return self._broker_id
+
     def is_useful(self):
         """@returns boolean indicating if this CommStrat has any reason to exist anymore"""
         return None   # if nothing overrides this, its not very useful...
@@ -424,7 +427,7 @@ def addr_to_id(addr):
     if type(addr) is types.DictType:
         return idlib.make_id(mencode.mencode(dict['pubkey']), 'broker')
     else:
-        return addr._broker_id
+        return addr.get_id()
 
 def dict_to_strategy(dict, mtm, broker_id=None, commstratseqno=None):
     """

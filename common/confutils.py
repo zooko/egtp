@@ -10,7 +10,7 @@
 #
 # BirthDate: 2000-06-08
 # CVS:
-__cvsid = '$Id: confutils.py,v 1.1 2002/01/29 20:07:07 zooko Exp $'
+__cvsid = '$Id: confutils.py,v 1.2 2002/01/29 22:40:31 zooko Exp $'
 
 
 ### standard modules
@@ -22,7 +22,7 @@ from MojoConstants import true, false, DEBUG_MODE
 import MojoConstants
 import debug
 import humanreadable
-from mojostd import NODE_VERSION_STR, CRYPTOPP_VERSION_STR, confdefaults,  platform_map, platform, gen_per_kb_price_dict, DictFileException, lines_to_dict, dict_to_lines, ConfManager, confman
+from mojostd import EGTP_VERSION_STR, CRYPTOPP_VERSION_STR, confdefaults,  platform_map, platform, gen_per_kb_price_dict, DictFileException, lines_to_dict, dict_to_lines, ConfManager, confman
 import types
 
 

@@ -6,10 +6,10 @@
 #    GNU Lesser General Public License v2.1.
 #    See the file COPYING or visit http://www.gnu.org/ for details.
 #
-__cvsid = '$Id: NodeVersion.py,v 1.1 2002/01/29 20:07:05 zooko Exp $'
+__cvsid = '$Id: EGTPVersion.py,v 1.1 2002/01/29 22:40:29 zooko Exp $'
 
 #
-# This "module" should contain nothing else but NODE_VERSION_STR
+# This "module" should contain nothing else but EGTP_VERSION_STR
 #
 # ... and __cvsid...
 # ... and a copyright notice so that nobody illegally copies our version numbers...
@@ -17,5 +17,5 @@ __cvsid = '$Id: NodeVersion.py,v 1.1 2002/01/29 20:07:05 zooko Exp $'
 
 import os, string
 
-NODE_VERSION_TUP=(0,0,1,)
-NODE_VERSION_STR=string.join(map(str, NODE_VERSION_TUP), ".")
+EGTP_VERSION_TUP=(0,0,2,)
+EGTP_VERSION_STR=string.join(map(str, EGTP_VERSION_TUP), ".")

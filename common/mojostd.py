@@ -12,7 +12,7 @@
 # the sub modules that import things from this (debug, confutils,
 # mojoutil, idlib, etc..)
 #
-__cvsid = '$Id: mojostd.py,v 1.1 2002/01/29 20:07:06 zooko Exp $'
+__cvsid = '$Id: mojostd.py,v 1.2 2002/01/29 22:40:31 zooko Exp $'
 
 
 ### Imports:
@@ -962,7 +962,7 @@ mojoutil.recursive_dict_update(confman["PATH"], mypathdict)
 
 # keep these as valid VersionNumbers, our code will use that to
 # check for later versions of the software from the bootpage.
-from NodeVersion import NODE_VERSION_STR
+from EGTPVersion import EGTP_VERSION_STR
 
 # XXX until this is autodetected, don't have it misreport
 import evilcryptopp
@@ -1162,7 +1162,7 @@ def gen_per_kb_price_dict(onekbprice, scalingfactor=0.95) : # XXX Shouldn't this
 dictutil.recursive_dict_update(confdefaults,
         {
             "MAX_VERBOSITY" : "2",
-            "NODE_VERSION_STR" : NODE_VERSION_STR,
+            "EGTP_VERSION_STR" : EGTP_VERSION_STR,
             
             # for General Preferences
             "AUTO_LAUNCH_BROWSER": "yes",
@@ -1596,8 +1596,8 @@ class ConfManager(UserDict.UserDict):
         filedict = lines_to_dict(file.readlines())
         dictutil.recursive_dict_update(self.dict, filedict)
         file.close()
-        if VersionNumber(self.dict.get("NODE_VERSION_STR")) != VersionNumber(NODE_VERSION_STR):
-            mojolog.write("NOTE: Loading '%s' version config file while running '%s' version confutils\n" % (self.dict.get("NODE_VERSION_STR"), NODE_VERSION_STR))
+        if VersionNumber(self.dict.get("EGTP_VERSION_STR")) != VersionNumber(EGTP_VERSION_STR):
+            mojolog.write("NOTE: Loading '%s' version config file while running '%s' version confutils\n" % (self.dict.get("EGTP_VERSION_STR"), EGTP_VERSION_STR))
 
         if platform == 'win32': 
             confdefaults['TCP_MAX_CONNECTIONS'] = 50
@@ -1631,7 +1631,7 @@ class ConfManager(UserDict.UserDict):
             mojolog.write("ConfMan: NOT saving due to transience.\n")
             return
 
-        self.dict["NODE_VERSION_STR"] = NODE_VERSION_STR
+        self.dict["EGTP_VERSION_STR"] = EGTP_VERSION_STR
         mojolog.write('saving conf file %s (%s); PATH section:\n%s\n', args=(self.dict["PATH"]["BROKER_CONF"], os.path.expandvars(self.dict["PATH"]["BROKER_CONF"]), self.dict["PATH"],), v=6, vs='conf')
         file = open(os.path.expandvars(self.dict["PATH"]["BROKER_CONF"]), 'w')
         file.writelines(dict_to_lines(self.dict))
