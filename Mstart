@@ -6,7 +6,7 @@
 #    GNU Lesser General Public License v2.1.
 #    See the file COPYING or visit http://www.gnu.org/ for details.
 #
-__cvsid="$Id: Mstart,v 1.3 2002/03/11 17:35:16 zooko Exp $"
+__cvsid="$Id: Mstart,v 1.4 2002/03/14 16:50:30 zooko Exp $"
 
 
 # XXX README README README
@@ -129,8 +129,8 @@ function findEGTPdir {
     exit 1
 }
 
-# Defines a function `EGTPenvset' which sets the PYTHONPATH environment variable 
-# so that EGTP.py can find the Python utility libraries that it needs.
+# Defines a function `EGTPenvset' which sets the PATH and PYTHONPATH environment 
+# variable so that EGTP programs can find the Python and shell files that they need.
 
 # precondition: the PYTHON variable must point to a good Python interpreter
 # precondition: the EGTPDIR variable must contain the name of your 'EGTP/' directory
@@ -165,13 +165,24 @@ function EGTPenvset {
     NEWPYTHONPATH=`${PYTHON} -c " 
 import os, string 
 pp=string.split(os.environ.get('PYTHONPATH', ''), ':') 
-for np in [ \"${EGTPDIR}/../libbase32\",\"${EGTPDIR}/PythonLibs/pyutil\", \"${EGTPDIR}/../mojoasyncore\", \"${EGTPDIR}/common\", \"${EGTPDIR}/common/crypto/Python\", \"${EGTPDIR}/PythonLibs\", ]: 
+for np in [ \"${EGTPDIR}/../libbase32\", \"${EGTPDIR}/PythonLibs/pyutil\", \"${EGTPDIR}/../mojoasyncore\", \"${EGTPDIR}/common\", \"${EGTPDIR}/common/crypto/Python\", \"${EGTPDIR}/PythonLibs\", ]: 
     if not np in pp: pp.insert(0, os.path.abspath(os.path.expandvars(os.path.expanduser(np)))) 
 print string.join(pp, ':') 
 "`
 
     # echo NEWPYTHONPATH == ${NEWPYTHONPATH}
     export PYTHONPATH=${NEWPYTHONPATH}
+
+    NEWPATH=`${PYTHON} -c " 
+import os, string 
+pp=string.split(os.environ.get('PATH', ''), ':') 
+for np in [ \"${EGTPDIR}\",]: 
+    if not np in pp: pp.insert(0, os.path.abspath(os.path.expandvars(os.path.expanduser(np)))) 
+print string.join(pp, ':') 
+"`
+
+    # echo NEWPATH == ${NEWPATH}
+    export PATH=${NEWPATH}
 
     if [ "X${EGTPCONFDIR}" = "X" ]; then
         export EGTPCONFDIR="${HOME}/.EGTP"

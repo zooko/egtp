@@ -6,7 +6,7 @@
 #    GNU Lesser General Public License v2.1.
 #    See the file COPYING or visit http://www.gnu.org/ for details.
 #
-__cvsid = '$Id: EGTPtest.py,v 1.8 2002/03/13 21:27:13 zooko Exp $'
+__cvsid = '$Id: EGTPtest.py,v 1.9 2002/03/14 16:50:30 zooko Exp $'
 
 # standard Python modules
 import threading, types
@@ -24,11 +24,12 @@ from timeutil import timer
 # (old) MN modules
 from confutils import confman
 import idlib
-from interfaces import *
 
 # EGTP modules
 import CommStrat
 import Node
+import NodeLookupMan
+from interfaces import *
 
 true = 1
 false = 0
@@ -91,7 +92,7 @@ def _help_test(finishedflag, numsuccessesh, lm, dm, name="a test"):
     n2.send(CommStrat.addr_to_id(n1.get_address()), mtype="ping", msg="hello there, you crazy listener!")
 
 def test_1(finishedflag, numsuccessesh):
-    localLM = LocalLookupMan()
+    localLM = NodeLookupMan.NodeLookupMan(LocalLookupMan())
     localDM = LocalDiscoveryMan()
     _help_test(finishedflag, numsuccessesh, localLM, localDM, name="test_1")
 
@@ -111,7 +112,7 @@ def runalltests(tests, expectedfailures=0):
         ts.append((test, finishedflag,))
         DoQ.doq.add_task(test, args=(finishedflag, numsuccessesh,))
 
-    timeout = 20
+    timeout = 30
     for (test, finishedflag,) in ts:
         tstart = timer.time()
         while not finishedflag.isSet():

@@ -6,7 +6,7 @@
 #    GNU Lesser General Public License v2.1.
 #    See the file COPYING or visit http://www.gnu.org/ for details.
 #
-__cvsid = '$Id: interfaces.py,v 1.1 2002/01/29 20:07:05 zooko Exp $'
+__cvsid = '$Id: interfaces.py,v 1.2 2002/03/14 16:50:30 zooko Exp $'
 
 # standard Python modules
 import exceptions
@@ -54,7 +54,7 @@ class ILookupHandler:
     def __init__(self):
         pass
 
-    def result(self, value):
+    def result(self, object):
         """
         The results are in!  Your lookup manager will already have verified that this value is
         cryptographically proven to match the self-authenticating key.  You can now do what you want
@@ -125,7 +125,7 @@ class IDiscoveryHandler:
     def __init__(self):
         pass
 
-    def result(self, value):
+    def result(self, object):
         """
         The results are in!  You can now do what you want with the results.  Note that `None' is a
         valid result.  Whether your discovery manager chooses to tell you that the answer is `None',
