@@ -6,7 +6,7 @@
 #    GNU Lesser General Public License v2.1.
 #    See the file COPYING or visit http://www.gnu.org/ for details.
 #
-__cvsid = '$Id: EGTPVersion.py,v 1.16 2002/06/24 21:33:29 zooko Exp $'
+__cvsid = '$Id: EGTPVersion.py,v 1.17 2002/06/25 03:42:29 zooko Exp $'
 
 # standard modules
 import string
@@ -15,7 +15,7 @@ import string
 import VersionNumber
 
 # major, minor, micro (== bugfix release), nano (== not-publically-visible patchlevel), flag (== not-publically-visible UNSTABLE or STABLE flag)
-versiontup = (0, 0, 2, 15,)
+versiontup = (0, 0, 2, 16,)
 versionflag = 'UNSTABLE'
 versionobj = VersionNumber.VersionNumber(string.join(map(str, versiontup), '.') + '-' + versionflag)
 versionstr_full = versionobj.full_string()

@@ -1,7 +1,7 @@
 /*
  * mencode.py helper functions written in C for speed
  * 
- * $Id: _c_mencode_help.c,v 1.1 2002/01/29 20:07:08 zooko Exp $
+ * $Id: _c_mencode_help.c,v 1.2 2002/06/25 03:42:29 zooko Exp $
  */
 
 #include <stdlib.h>
@@ -101,77 +101,85 @@ static PyObject *encode_string(PyObject *self, PyObject *args)
 
 static PyObject *real_encode_dict(PyObject *data, PyObject *output)
 {
-    PyObject *keys, *key, *ret;
-    int i, keylen;
-    PyObject *owrite_method;
-    PyObject *excval;
+	PyObject *keys, *key, *ret;
+	int i, keylen;
+	PyObject *owrite_method;
+	PyObject *excval;
 
-    owrite_method = PyObject_GetAttrString(output, "write");
-    if (!owrite_method || !PyCallable_Check(owrite_method)) {
-	    excval = Py_BuildValue("(is)", 0, "output object must have a callable write method");
-	    if (excval != NULL) {
-		    PyErr_SetObject(PyExc_ValueError, excval);
-		    Py_DECREF(excval);
-	    }
-	    Py_XDECREF(owrite_method);
-	    return NULL;
-    }
-
-    // result.write('(4:dict')
-    ret = PyObject_CallObject(owrite_method, dict_tup_const);
-    RETURN_IF_EXC(ret);
-    Py_DECREF(ret);
-
-    // keys = data.keys()
-    keys = PyDict_Keys(data);
-
-    // keys.sort()
-    // XXX FIXME bad!  this depends on the python implementations cross type comparison (string > integer or long)
-    if (PyList_Sort(keys) != 0) {
-	    excval = Py_BuildValue("(is)", 0, "PyList_Sort failed [returned non zero]");
-	    if (excval != NULL) {
-		    PyErr_SetObject(MencodeError, excval);
-		    Py_DECREF(excval);
-	    }
-	    Py_DECREF(keys);
-	    Py_XDECREF(owrite_method);
-	    return NULL;
-    }
-
-    keylen = PyList_Size(keys);
-    // for key in keys:
-    for (i = 0; i < keylen; i++) {
-        key = PyList_GetItem(keys, i);
-        //     if type(key) not in (types.StringType, types.IntType, types.LongType):
-        // TODO support BufferType in the future
-        if (!PyString_Check(key) && !PyInt_Check(key) && !PyLong_Check(key)) {
-		Py_DECREF(keys);
-		// it would be nice if this exception included the key we tried to encode...
-		excval = Py_BuildValue("(is)", 0, "mencoded dictionary keys must be strings or numbers");
+	owrite_method = PyObject_GetAttrString(output, "write");
+	if (!owrite_method || !PyCallable_Check(owrite_method)) {
+		excval = Py_BuildValue("(is)", 0, "output object must have a callable write method");
 		if (excval != NULL) {
-			PyErr_SetObject(MencodeError, excval);
+			PyErr_SetObject(PyExc_ValueError, excval);
 			Py_DECREF(excval);
 		}
 		Py_XDECREF(owrite_method);
 		return NULL;
-        }
-        //     encode_io(key, result)
-        real_encode_io(key, output);
-        //     encode_io(data[key], result)
-        real_encode_io(PyDict_GetItem(data, key), output);
-    }
+	}
 
-    Py_DECREF(keys);
+	// result.write('(4:dict')
+	ret = PyObject_CallObject(owrite_method, dict_tup_const);
+	RETURN_IF_EXC(ret);
+	Py_DECREF(ret);
 
-    // result.write(')')
-    ret = PyObject_CallObject(owrite_method, close_paren_tup_const);
-    RETURN_IF_EXC(ret);
-    Py_DECREF(ret);
+	// keys = data.keys()
+	keys = PyDict_Keys(data);
 
-    Py_XDECREF(owrite_method);
+	// keys.sort()
+	// XXX FIXME bad!  this depends on the python implementations cross type comparison (string > integer or long)
+	if (PyList_Sort(keys) != 0) {
+		excval = Py_BuildValue("(is)", 0, "PyList_Sort failed [returned non zero]");
+		if (excval != NULL) {
+			PyErr_SetObject(MencodeError, excval);
+			Py_DECREF(excval);
+		}
+		Py_DECREF(keys);
+		Py_DECREF(owrite_method);
+		return NULL;
+	}
 
-    Py_INCREF(Py_None);
-    return Py_None;
+	keylen = PyList_Size(keys);
+	// for key in keys:
+	for (i = 0; i < keylen; i++) {
+		key = PyList_GetItem(keys, i);
+		//     if type(key) not in (types.StringType, types.IntType, types.LongType):
+		// TODO support BufferType in the future
+		if (!PyString_Check(key) && !PyInt_Check(key) && !PyLong_Check(key)) {
+			Py_DECREF(keys);
+			// it would be nice if this exception included the key we tried to encode...
+			excval = Py_BuildValue("(is)", 0, "mencoded dictionary keys must be strings or numbers");
+			if (excval != NULL) {
+				PyErr_SetObject(MencodeError, excval);
+				Py_DECREF(excval);
+			}
+			Py_DECREF(owrite_method);
+			return NULL;
+		}
+		//     encode_io(key, result)
+		if (real_encode_io(key, output) == NULL) {
+			Py_DECREF(keys);
+			Py_DECREF(owrite_method);
+			return NULL;
+		}
+		//     encode_io(data[key], result)
+		if (real_encode_io(PyDict_GetItem(data, key), output) == NULL) {
+			Py_DECREF(keys);
+			Py_DECREF(owrite_method);
+			return NULL;
+		}
+	}
+
+	Py_DECREF(keys);
+
+	// result.write(')')
+	ret = PyObject_CallObject(owrite_method, close_paren_tup_const);
+	RETURN_IF_EXC(ret);
+	Py_DECREF(ret);
+
+	Py_XDECREF(owrite_method);
+
+	Py_INCREF(Py_None);
+	return Py_None;
 } 
 
 
@@ -210,8 +218,9 @@ static PyObject *real_encode_io(PyObject *data, PyObject *output)
 			return NULL;
 
 		func = PyDict_GetItem(encoder_dict, type);   /* borrowed reference to func */
+		/* printf("type: %p, func: %p\n", type, func); */
 		Py_DECREF(type);
-		if (!func) {
+		if (func == NULL) {
 			/* TODO include a reference to data in this error */
 			excval = Py_BuildValue("(is)", 0, "encoder_dict did not contain an encoding function for data");
 			if (excval != NULL) {
