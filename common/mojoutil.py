@@ -19,7 +19,6 @@ import sha
 import string
 import struct
 import sys
-import tempfile
 import threading
 import traceback
 import time
@@ -31,6 +30,7 @@ import zlib
 # pyutil modules
 from humanreadable import hr
 from debugprint import debugprint
+import fileutil
 
 # old-EGTP modules
 from confutils import confman
@@ -644,7 +644,7 @@ def coverageit(func):
         debugprint("yyyyyyyyyyyyyyyyyyyy %s\n", args=(func,), v=0, vs="debug")
     finally:
         coverage.the_coverage.stop()
-        tmpfname = tempfile.mktemp() + hr(func)
+        tmpfname = fileutil.mktemp(prefix=hr(func))
 
         debugprint("zzzzzzzzzzzzzzzzzzzz %s\n", args=(func,), v=0, vs="debug")
 
@@ -665,7 +665,7 @@ def traceorcountit(func, dotrace, docount, countfuncs):
         result = t.runfunc(func)
         debugprint("yyyyyyyyyyyyyyyyyyyy %s\n", args=(func,), v=0, vs="debug")
     finally:
-        tmpfname = tempfile.mktemp() + hr(func)
+        tmpfname = fileutil.mktemp(prefix=hr(func))
 
         debugprint("zzzzzzzzzzzzzzzzzzzz %s\n", args=(func,), v=0, vs="debug")
 
@@ -694,7 +694,7 @@ def _dont_enable_if_you_want_speed_profit(func):
         result = p.runcall(func)
         debugprint("yyyyyyyyyyyyyyyyyyyy %s\n", args=(func,), v=0, vs="debug")
     finally:
-        tmpfname = tempfile.mktemp() + hr(func)
+        tmpfname = fileutil.mktemp(prefix=hr(func))
 
         debugprint("zzzzzzzzzzzzzzzzzzzz %s\n", args=(tmpfname,), v=0, vs="debug")
 
